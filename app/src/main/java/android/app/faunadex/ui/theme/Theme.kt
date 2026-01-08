@@ -64,8 +64,8 @@ private val LightColorScheme = lightColorScheme(
     errorContainer = ErrorRedLight,
     onErrorContainer = ErrorRedDark,
 
-    background = OffWhite,
-    onBackground = DarkForest,
+    background = DarkForest,
+    onBackground = OffWhite,
 
     surface = White,
     onSurface = DarkForest,
