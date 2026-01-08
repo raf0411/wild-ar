@@ -60,7 +60,6 @@ fun ChangePasswordScreen(
                                 duration = SnackbarDuration.Short
                             )
                             kotlinx.coroutines.delay(1000)
-                            onNavigateBack()
                         }
                     },
                     onError = onError

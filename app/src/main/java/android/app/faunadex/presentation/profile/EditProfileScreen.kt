@@ -69,10 +69,14 @@ fun EditProfileScreen(
                     user = (uiState as ProfileUiState.Success).user,
                     onSave = { username, educationLevel ->
                         viewModel.updateProfile(username, educationLevel)
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Profile updated successfully!",
+                                duration = SnackbarDuration.Short
+                            )
+                            kotlinx.coroutines.delay(1000)
+                        }
                     },
-                    onNavigateBack = onNavigateBack,
-                    snackbarHostState = snackbarHostState,
-                    scope = scope,
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -100,33 +104,15 @@ fun EditProfileScreen(
 private fun EditProfileContent(
     user: User,
     onSave: (String, String) -> Unit,
-    onNavigateBack: () -> Unit,
-    snackbarHostState: SnackbarHostState,
-    scope: kotlinx.coroutines.CoroutineScope,
     modifier: Modifier = Modifier
 ) {
     var username by remember { mutableStateOf(user.username) }
     var educationLevel by remember { mutableStateOf(user.educationLevel) }
-    var shouldNavigateBack by remember { mutableStateOf(false) }
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showEducationLevelDialog by remember { mutableStateOf(false) }
     var pendingUsername by remember { mutableStateOf("") }
     var pendingEducationLevel by remember { mutableStateOf("") }
 
-    LaunchedEffect(shouldNavigateBack) {
-        if (shouldNavigateBack) {
-            // Launch snackbar in background without waiting
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = "Profile updated successfully!",
-                    duration = SnackbarDuration.Short
-                )
-            }
-            // Wait briefly then navigate
-            kotlinx.coroutines.delay(500)
-            onNavigateBack()
-        }
-    }
 
     Column(
         modifier = modifier
@@ -216,7 +202,6 @@ private fun EditProfileContent(
             } else {
                 // Only username changed, save directly
                 onSave(pendingUsername, pendingEducationLevel)
-                shouldNavigateBack = true
             }
         },
         onDismiss = { showEditProfileDialog = false },
@@ -232,7 +217,6 @@ private fun EditProfileContent(
         onConfirm = {
             // Save the changes
             onSave(pendingUsername, pendingEducationLevel)
-            shouldNavigateBack = true
             showEditProfileDialog = false
         },
         onDismiss = {
@@ -246,9 +230,6 @@ private fun EditProfileContent(
 @Preview(showBackground = true)
 @Composable
 fun EditProfileScreenPreview() {
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
     FaunaDexTheme {
         Scaffold(
             topBar = {
@@ -270,9 +251,6 @@ fun EditProfileScreenPreview() {
                     joinedAt = Date()
                 ),
                 onSave = { _, _ -> },
-                onNavigateBack = {},
-                snackbarHostState = snackbarHostState,
-                scope = scope,
                 modifier = Modifier.padding(paddingValues)
             )
         }
