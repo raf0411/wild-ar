@@ -84,7 +84,7 @@ fun OnboardingScreen(
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 AuthButton(
                     text = "Register",

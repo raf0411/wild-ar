@@ -218,6 +218,8 @@ internal fun RegisterContent(
                         Text(
                             text = uiState.errorMessage,
                             fontFamily = JerseyFont,
+                            fontSize = 18.sp,
+                            textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )
