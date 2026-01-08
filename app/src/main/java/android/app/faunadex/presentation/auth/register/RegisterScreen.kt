@@ -3,6 +3,7 @@ package android.app.faunadex.presentation.auth.register
 import android.app.faunadex.R
 import android.app.faunadex.presentation.components.AuthButton
 import android.app.faunadex.presentation.components.CustomTextField
+import android.app.faunadex.presentation.components.EducationLevelSelector
 import android.app.faunadex.presentation.components.LayeredHeader
 import android.app.faunadex.ui.theme.AlmostBlack
 import android.app.faunadex.ui.theme.CodeNextFont
@@ -56,6 +57,7 @@ fun RegisterScreen(
         onUsernameChange = viewModel::onUsernameChange,
         onPasswordChange = viewModel::onPasswordChange,
         onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
+        onEducationLevelChange = viewModel::onEducationLevelChange,
         onSignUpClick = viewModel::signUp,
         onNavigateToLogin = onNavigateToLogin
     )
@@ -68,6 +70,7 @@ internal fun RegisterContent(
     onUsernameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
+    onEducationLevelChange: (String) -> Unit,
     onSignUpClick: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
@@ -191,8 +194,27 @@ internal fun RegisterContent(
                         isError = uiState.errorMessage != null
                     )
 
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Your Education Level",
+                        fontFamily = JerseyFont,
+                        fontSize = 28.sp,
+                        color = PastelYellow,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    EducationLevelSelector(
+                        selectedLevel = uiState.educationLevel,
+                        onLevelSelected = onEducationLevelChange,
+                        enabled = !uiState.isLoading
+                    )
+
                     if (uiState.errorMessage != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(32.dp))
                         Text(
                             text = uiState.errorMessage,
                             color = MaterialTheme.colorScheme.error,
@@ -231,6 +253,9 @@ internal fun RegisterContent(
                             color = PastelYellow
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(48.dp))
+
                 }
             }
         }
@@ -263,6 +288,7 @@ fun RegisterScreenPreview() {
             onUsernameChange = {},
             onPasswordChange = {},
             onConfirmPasswordChange = {},
+            onEducationLevelChange = {},
             onSignUpClick = {},
             onNavigateToLogin = {}
         )

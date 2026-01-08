@@ -147,7 +147,7 @@ internal fun LoginContent(
                 )
 
                 if (uiState.errorMessage != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
                     Text(
                         text = uiState.errorMessage,
                         color = MaterialTheme.colorScheme.error,
@@ -186,6 +186,8 @@ internal fun LoginContent(
                         color = PastelYellow
                     )
                 }
+
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }

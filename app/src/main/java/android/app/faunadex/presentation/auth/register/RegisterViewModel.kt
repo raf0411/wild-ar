@@ -35,6 +35,10 @@ class RegisterViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(confirmPassword = confirmPassword, errorMessage = null)
     }
 
+    fun onEducationLevelChange(educationLevel: String) {
+        _uiState.value = _uiState.value.copy(educationLevel = educationLevel, errorMessage = null)
+    }
+
     fun signUp() {
         val state = _uiState.value
 
@@ -76,6 +80,7 @@ data class RegisterUiState(
     val username: String = "",
     val password: String = "",
     val confirmPassword: String = "",
+    val educationLevel: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isSignUpSuccessful: Boolean = false
