@@ -2,6 +2,8 @@ package android.app.faunadex.data.repository
 
 import android.app.faunadex.domain.model.User
 import android.app.faunadex.domain.repository.UserRepository
+import android.util.Log
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -14,8 +16,16 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun createUserProfile(user: User): Result<Unit> {
         return try {
-            // Gunakan UID sebagai document ID - Best Practice!
-            usersCollection.document(user.uid).set(user).await()
+            val userMap = hashMapOf(
+                "uid" to user.uid,
+                "email" to user.email,
+                "username" to user.username,
+                "education_level" to user.educationLevel,
+                "current_title" to user.currentTitle,
+                "total_xp" to user.totalXp,
+                "joined_at" to FieldValue.serverTimestamp()
+            )
+            usersCollection.document(user.uid).set(userMap).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -25,20 +35,56 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getUserProfile(uid: String): Result<User> {
         return try {
             val document = usersCollection.document(uid).get().await()
-            val user = document.toObject(User::class.java)
-            if (user != null) {
+
+            Log.d("UserRepositoryImpl", "Document exists: ${document.exists()}")
+            Log.d("UserRepositoryImpl", "Document data: ${document.data}")
+
+            if (document.exists()) {
+                // Explicitly map snake_case fields to User object
+                val educationLevel = document.getString("education_level") ?: ""
+                val username = document.getString("username") ?: ""
+                val currentTitle = document.getString("current_title") ?: "Petualang Pemula"
+                val totalXp = document.getLong("total_xp")?.toInt() ?: 0
+
+                Log.d("UserRepositoryImpl", "Read from Firestore - education_level: '$educationLevel', username: '$username'")
+
+                val user = User(
+                    uid = document.getString("uid") ?: "",
+                    email = document.getString("email") ?: "",
+                    username = username,
+                    educationLevel = educationLevel,
+                    currentTitle = currentTitle,
+                    totalXp = totalXp,
+                    joinedAt = document.getTimestamp("joined_at")?.toDate()
+                )
+
+                Log.d("UserRepositoryImpl", "User object created - educationLevel: '${user.educationLevel}'")
                 Result.success(user)
             } else {
                 Result.failure(Exception("User profile not found"))
             }
         } catch (e: Exception) {
+            Log.e("UserRepositoryImpl", "Error getting user profile", e)
             Result.failure(e)
         }
     }
 
     override suspend fun updateUserProfile(user: User): Result<Unit> {
         return try {
-            usersCollection.document(user.uid).set(user).await()
+            // Explicitly map to snake_case field names
+            val userMap = hashMapOf(
+                "uid" to user.uid,
+                "email" to user.email,
+                "username" to user.username,
+                "education_level" to user.educationLevel,
+                "current_title" to user.currentTitle,
+                "total_xp" to user.totalXp
+            )
+            // Don't update joined_at on updates
+            if (user.joinedAt != null) {
+                userMap["joined_at"] = user.joinedAt
+            }
+            usersCollection.document(user.uid).set(userMap).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

@@ -8,6 +8,7 @@ import android.app.faunadex.presentation.auth.login.LoginScreen
 import android.app.faunadex.presentation.auth.onboarding.OnboardingScreen
 import android.app.faunadex.presentation.auth.register.RegisterScreen
 import android.app.faunadex.presentation.dashboard.DashboardScreen
+import android.app.faunadex.presentation.profile.ProfileScreen
 
 @Composable
 fun NavGraph(
@@ -70,8 +71,17 @@ fun NavGraph(
                         popUpTo(0) { inclusive = true }
                         launchSingleTop = true
                     }
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.route) {
+                        launchSingleTop = true
+                    }
                 }
             )
+        }
+
+        composable(Screen.Profile.route) {
+            ProfileScreen()
         }
     }
 }

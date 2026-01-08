@@ -2,7 +2,6 @@ package android.app.faunadex.presentation.profile
 
 import android.app.faunadex.domain.model.User
 import android.app.faunadex.ui.theme.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,7 +36,12 @@ fun ProfileScreen(
                 LoadingContent()
             }
             is ProfileUiState.Success -> {
-                ProfileContent(user = state.user)
+                ProfileContent(
+                    user = state.user,
+                    onUpdateEducationLevel = { level ->
+                        viewModel.updateEducationLevel(level)
+                    }
+                )
             }
             is ProfileUiState.Error -> {
                 ErrorContent(
@@ -87,7 +91,7 @@ private fun ErrorContent(
 
         Text(
             text = message,
-            fontFamily = CodeNextFont,
+            fontFamily = PoppinsFont,
             fontSize = 16.sp,
             color = White,
             textAlign = TextAlign.Center
@@ -103,7 +107,7 @@ private fun ErrorContent(
         ) {
             Text(
                 text = "Retry",
-                fontFamily = CodeNextFont,
+                fontFamily = PoppinsFont,
                 fontSize = 18.sp
             )
         }
@@ -111,7 +115,10 @@ private fun ErrorContent(
 }
 
 @Composable
-private fun ProfileContent(user: User) {
+private fun ProfileContent(
+    user: User,
+    onUpdateEducationLevel: (String) -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -145,13 +152,67 @@ private fun ProfileContent(user: User) {
                     .fillMaxWidth()
                     .padding(24.dp)
             ) {
-                ProfileField(label = "Username", value = user.username)
+                ProfileField(label = "Username", value = user.username.ifEmpty { "Not Set" })
                 Spacer(modifier = Modifier.height(16.dp))
 
                 ProfileField(label = "Email", value = user.email)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                ProfileField(label = "Education Level", value = user.educationLevel)
+                ProfileField(
+                    label = "Education Level",
+                    value = user.educationLevel.ifEmpty { "Not Set - Please update below" }
+                )
+
+                // Show update buttons if education level is empty
+                if (user.educationLevel.isEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Select Your Education Level:",
+                        fontFamily = CodeNextFont,
+                        fontSize = 14.sp,
+                        color = PastelYellow,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Button(
+                            onClick = { onUpdateEducationLevel("SD") },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PrimaryGreenLight
+                            ),
+                            modifier = Modifier.weight(1f).padding(horizontal = 4.dp)
+                        ) {
+                            Text("SD", fontFamily = CodeNextFont)
+                        }
+
+                        Button(
+                            onClick = { onUpdateEducationLevel("SMP") },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PrimaryGreenLight
+                            ),
+                            modifier = Modifier.weight(1f).padding(horizontal = 4.dp)
+                        ) {
+                            Text("SMP", fontFamily = CodeNextFont)
+                        }
+
+                        Button(
+                            onClick = { onUpdateEducationLevel("SMA") },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PrimaryGreenLight
+                            ),
+                            modifier = Modifier.weight(1f).padding(horizontal = 4.dp)
+                        ) {
+                            Text("SMA", fontFamily = CodeNextFont)
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
 
                 ProfileField(label = "Current Title", value = user.currentTitle)
@@ -195,24 +256,26 @@ private fun ProfileContent(user: User) {
 
                 // Simple XP progress bar
                 LinearProgressIndicator(
-                    progress = (user.totalXp % 100) / 100f,
+                    progress = { (user.totalXp % 100) / 100f },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(16.dp),
                     color = PastelYellow,
-                    trackColor = DarkForest
+                    trackColor = DarkForest,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = "${user.totalXp % 100} / 100 XP",
-                    fontFamily = CodeNextFont,
+                    fontFamily = PoppinsFont,
                     fontSize = 16.sp,
                     color = White
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
@@ -221,7 +284,7 @@ private fun ProfileField(label: String, value: String) {
     Column {
         Text(
             text = label,
-            fontFamily = CodeNextFont,
+            fontFamily = PoppinsFont,
             fontSize = 14.sp,
             color = PastelYellow,
             fontWeight = FontWeight.Bold
@@ -231,7 +294,7 @@ private fun ProfileField(label: String, value: String) {
 
         Text(
             text = value,
-            fontFamily = CodeNextFont,
+            fontFamily = PoppinsFont,
             fontSize = 18.sp,
             color = White
         )
