@@ -50,7 +50,7 @@ fun FaunaDexApp(
     val startDestination = if (isUserLoggedIn) {
         Screen.Dashboard.route
     } else {
-        Screen.Login.route
+        Screen.Onboarding.route
     }
 
     NavGraph(
