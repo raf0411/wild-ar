@@ -23,6 +23,10 @@ class RegisterViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(email = email, errorMessage = null)
     }
 
+    fun onUsernameChange(username: String) {
+        _uiState.value = _uiState.value.copy(username = username, errorMessage = null)
+    }
+
     fun onPasswordChange(password: String) {
         _uiState.value = _uiState.value.copy(password = password, errorMessage = null)
     }
@@ -69,6 +73,7 @@ class RegisterViewModel @Inject constructor(
 
 data class RegisterUiState(
     val email: String = "",
+    val username: String = "",
     val password: String = "",
     val confirmPassword: String = "",
     val isLoading: Boolean = false,

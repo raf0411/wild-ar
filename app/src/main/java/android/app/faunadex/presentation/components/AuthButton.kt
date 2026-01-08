@@ -1,4 +1,4 @@
-package android.app.faunadex.ui.component
+package android.app.faunadex.presentation.components
 
 import android.app.faunadex.ui.theme.AlmostBlack
 import android.app.faunadex.ui.theme.CodeNextFont

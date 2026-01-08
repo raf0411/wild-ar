@@ -1,13 +1,10 @@
-package android.app.faunadex.ui.component
+package android.app.faunadex.presentation.components
 
 import android.app.faunadex.ui.theme.AlmostBlack
-import android.app.faunadex.ui.theme.CodeNextFont
 import android.app.faunadex.ui.theme.DarkForest
-import android.app.faunadex.ui.theme.DarkGreen
 import android.app.faunadex.ui.theme.DarkGreenSage
 import android.app.faunadex.ui.theme.JerseyFont
 import android.app.faunadex.ui.theme.PastelYellow
-import android.app.faunadex.ui.theme.PrimaryGreen
 import android.app.faunadex.ui.theme.PrimaryGreenLight
 import android.app.faunadex.ui.theme.White
 import androidx.compose.foundation.background

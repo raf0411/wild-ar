@@ -1,8 +1,8 @@
 package android.app.faunadex.presentation.auth.onboarding
 
 import android.app.faunadex.R
-import android.app.faunadex.ui.component.AuthButton
-import android.app.faunadex.ui.component.LayeredHeader
+import android.app.faunadex.presentation.components.AuthButton
+import android.app.faunadex.presentation.components.LayeredHeader
 import android.app.faunadex.ui.theme.AlmostBlack
 import android.app.faunadex.ui.theme.CodeNextFont
 import android.app.faunadex.ui.theme.DarkForest
@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,7 +42,8 @@ fun OnboardingScreen(
             .background(DarkForest)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
         ) {
             LayeredHeader(
                 text = "Welcome to",
@@ -52,6 +55,7 @@ fun OnboardingScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -89,7 +93,7 @@ fun OnboardingScreen(
                     shineColor = PrimaryGreenLime,
                     shadeColor = PrimaryGreenLime,
                     textColor = White,
-                    strokeWidth = 16f,
+                    strokeWidth = 14f,
                     shineHeight = 40.dp,
                     height = 100.dp,
                     fontSize = 40.sp,
