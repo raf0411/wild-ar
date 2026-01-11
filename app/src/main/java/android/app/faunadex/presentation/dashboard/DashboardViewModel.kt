@@ -2,7 +2,6 @@ package android.app.faunadex.presentation.dashboard
 
 import androidx.lifecycle.ViewModel
 import android.app.faunadex.domain.usecase.GetCurrentUserUseCase
-import android.app.faunadex.domain.usecase.SignOutUseCase
 import android.app.faunadex.domain.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,8 +11,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val signOutUseCase: SignOutUseCase
+    private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
