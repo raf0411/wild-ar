@@ -5,9 +5,12 @@ import android.app.faunadex.presentation.components.CustomTextField
 import android.app.faunadex.presentation.components.FaunaBottomBar
 import android.app.faunadex.presentation.components.FaunaCard
 import android.app.faunadex.presentation.components.FaunaTopBar
+import android.app.faunadex.presentation.components.FilterBottomSheet
+import android.app.faunadex.presentation.components.FilterOption
 import android.app.faunadex.presentation.components.IconButton
 import android.app.faunadex.ui.theme.DarkForest
 import android.app.faunadex.ui.theme.DarkGreenShade
+import android.app.faunadex.ui.theme.PastelYellow
 import android.app.faunadex.ui.theme.PrimaryGreen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +32,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -44,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun DashboardScreen(
@@ -77,9 +85,36 @@ fun DashboardScreenContent(
     var lastLoadedCount by remember { mutableIntStateOf(10) }
     val listState = rememberLazyGridState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    var showFilterSheet by remember { mutableStateOf(false) }
+    var filterOptions by remember {
+        mutableStateOf(
+            listOf(
+                FilterOption("mammal", "Mammals", false),
+                FilterOption("bird", "Birds", false),
+                FilterOption("reptile", "Reptiles", false),
+                FilterOption("amphibian", "Amphibians", false),
+                FilterOption("fish", "Fish", false),
+                FilterOption("endangered", "Endangered Species", false),
+                FilterOption("endemic", "Endemic to Indonesia", false)
+            )
+        )
+    }
+
     Scaffold(
         topBar = {
             FaunaTopBar(backgroundColor = PrimaryGreen)
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = PrimaryGreen,
+                    contentColor = PastelYellow
+                )
+            }
         },
         bottomBar = {
             FaunaBottomBar(
@@ -116,7 +151,7 @@ fun DashboardScreenContent(
                     modifier = Modifier.weight(1f),
                     leadingIcon = {
                         Icon(
-                            modifier = Modifier.size(32.dp).padding(start = 6.dp),
+                            modifier = Modifier.size(28.dp).padding(start = 6.dp),
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
                             tint = DarkGreenShade
@@ -125,7 +160,7 @@ fun DashboardScreenContent(
                 )
 
                 IconButton(
-                    onClick = { /* TODO: Handle filter click */ }
+                    onClick = { showFilterSheet = true }
                 )
             }
 
@@ -133,51 +168,64 @@ fun DashboardScreenContent(
 
             val allFaunaList = remember {
                 listOf(
-                    Triple("Sumatran Tiger", "Panthera tigris sumatrae", 0),
-                    Triple("Komodo Dragon", "Varanus komodoensis", 1),
-                    Triple("Javan Rhinoceros", "Rhinoceros sondaicus", 2),
-                    Triple("Orangutan", "Pongo pygmaeus", 3),
-                    Triple("Bali Starling", "Leucopsar rothschildi", 4),
-                    Triple("Proboscis Monkey", "Nasalis larvatus", 5),
-                    Triple("Anoa", "Bubalus depressicornis", 6),
-                    Triple("Cenderawasih", "Paradisaea apoda", 7),
-                    Triple("Maleo Bird", "Macrocephalon maleo", 8),
-                    Triple("Tarsius", "Tarsius tarsier", 9),
-                    Triple("Banteng", "Bos javanicus", 10),
-                    Triple("Sun Bear", "Helarctos malayanus", 11),
-                    Triple("Clouded Leopard", "Neofelis nebulosa", 12),
-                    Triple("Slow Loris", "Nycticebus coucang", 13),
-                    Triple("Malayan Tapir", "Tapirus indicus", 14),
-                    Triple("Sunda Pangolin", "Manis javanica", 15),
-                    Triple("Javan Hawk-Eagle", "Nisaetus bartelsi", 16),
-                    Triple("Black Macaque", "Macaca nigra", 17),
-                    Triple("Babirusa", "Babyrousa babyrussa", 18),
-                    Triple("Javan Gibbon", "Hylobates moloch", 19),
-                    Triple("Asian Elephant", "Elephas maximus", 20),
-                    Triple("Green Turtle", "Chelonia mydas", 21),
-                    Triple("Whale Shark", "Rhincodon typus", 22),
-                    Triple("Manta Ray", "Mobula birostris", 23),
-                    Triple("Dugong", "Dugong dugon", 24),
-                    Triple("Saltwater Crocodile", "Crocodylus porosus", 25),
-                    Triple("False Gharial", "Tomistoma schlegelii", 26),
-                    Triple("Rafflesia", "Rafflesia arnoldii", 27),
-                    Triple("Javan Warty Pig", "Sus verrucosus", 28),
-                    Triple("Sumatran Rhino", "Dicerorhinus sumatrensis", 29)
+                    Triple("Sumatran Tiger", "Panthera tigris sumatrae", 0) to listOf("mammal", "endangered"),
+                    Triple("Komodo Dragon", "Varanus komodoensis", 1) to listOf("reptile", "endangered", "endemic"),
+                    Triple("Javan Rhinoceros", "Rhinoceros sondaicus", 2) to listOf("mammal", "endangered", "endemic"),
+                    Triple("Orangutan", "Pongo pygmaeus", 3) to listOf("mammal", "endangered", "endemic"),
+                    Triple("Bali Starling", "Leucopsar rothschildi", 4) to listOf("bird", "endangered", "endemic"),
+                    Triple("Proboscis Monkey", "Nasalis larvatus", 5) to listOf("mammal", "endangered", "endemic"),
+                    Triple("Anoa", "Bubalus depressicornis", 6) to listOf("mammal", "endangered", "endemic"),
+                    Triple("Cenderawasih", "Paradisaea apoda", 7) to listOf("bird", "endemic"),
+                    Triple("Maleo Bird", "Macrocephalon maleo", 8) to listOf("bird", "endangered", "endemic"),
+                    Triple("Tarsius", "Tarsius tarsier", 9) to listOf("mammal", "endemic"),
+                    Triple("Banteng", "Bos javanicus", 10) to listOf("mammal", "endangered", "endemic"),
+                    Triple("Sun Bear", "Helarctos malayanus", 11) to listOf("mammal", "endangered"),
+                    Triple("Clouded Leopard", "Neofelis nebulosa", 12) to listOf("mammal", "endangered"),
+                    Triple("Slow Loris", "Nycticebus coucang", 13) to listOf("mammal", "endangered", "endemic"),
+                    Triple("Malayan Tapir", "Tapirus indicus", 14) to listOf("mammal", "endangered"),
+                    Triple("Sunda Pangolin", "Manis javanica", 15) to listOf("mammal", "endangered", "endemic"),
+                    Triple("Javan Hawk-Eagle", "Nisaetus bartelsi", 16) to listOf("bird", "endangered", "endemic"),
+                    Triple("Black Macaque", "Macaca nigra", 17) to listOf("mammal", "endangered", "endemic"),
+                    Triple("Babirusa", "Babyrousa babyrussa", 18) to listOf("mammal", "endangered", "endemic"),
+                    Triple("Javan Gibbon", "Hylobates moloch", 19) to listOf("mammal", "endangered", "endemic"),
+                    Triple("Asian Elephant", "Elephas maximus", 20) to listOf("mammal", "endangered"),
+                    Triple("Green Turtle", "Chelonia mydas", 21) to listOf("reptile", "endangered"),
+                    Triple("Whale Shark", "Rhincodon typus", 22) to listOf("fish", "endangered"),
+                    Triple("Manta Ray", "Mobula birostris", 23) to listOf("fish", "endangered"),
+                    Triple("Dugong", "Dugong dugon", 24) to listOf("mammal", "endangered"),
+                    Triple("Saltwater Crocodile", "Crocodylus porosus", 25) to listOf("reptile"),
+                    Triple("False Gharial", "Tomistoma schlegelii", 26) to listOf("reptile", "endangered", "endemic"),
+                    Triple("Rafflesia", "Rafflesia arnoldii", 27) to listOf("endemic"),
+                    Triple("Javan Warty Pig", "Sus verrucosus", 28) to listOf("mammal", "endemic"),
+                    Triple("Sumatran Rhino", "Dicerorhinus sumatrensis", 29) to listOf("mammal", "endangered", "endemic")
                 )
             }
 
-            val filteredFaunaList = remember(searchQuery) {
-                if (searchQuery.isBlank()) {
-                    allFaunaList
-                } else {
-                    allFaunaList.filter { (name, latinName, _) ->
+            val selectedFilters = remember(filterOptions) {
+                filterOptions.filter { it.isSelected }.map { it.id }
+            }
+
+            val filteredFaunaList = remember(searchQuery, selectedFilters) {
+                var result = allFaunaList
+
+                if (selectedFilters.isNotEmpty()) {
+                    result = result.filter { (_, tags) ->
+                        selectedFilters.any { filter -> tags.contains(filter) }
+                    }
+                }
+
+                if (searchQuery.isNotBlank()) {
+                    result = result.filter { (fauna, _) ->
+                        val (name, latinName, _) = fauna
                         name.contains(searchQuery, ignoreCase = true) ||
                                 latinName.contains(searchQuery, ignoreCase = true)
                     }
                 }
+
+                result.map { it.first }
             }
 
-            LaunchedEffect(searchQuery) {
+            LaunchedEffect(searchQuery, selectedFilters) {
                 loadedItemsCount = 10
                 lastLoadedCount = 10
                 isLoadingMore = false
@@ -265,6 +313,32 @@ fun DashboardScreenContent(
                     }
                 }
             }
+        }
+
+        if (showFilterSheet) {
+            FilterBottomSheet(
+                title = "Filter Fauna",
+                description = "Select the filter categories you want to select to see on your home screen. You can update this anytime.",
+                filterOptions = filterOptions,
+                onFilterToggle = { filterId ->
+                    filterOptions = filterOptions.map { option ->
+                        if (option.id == filterId) {
+                            option.copy(isSelected = !option.isSelected)
+                        } else {
+                            option
+                        }
+                    }
+                },
+                onDismiss = { showFilterSheet = false },
+                onSave = {
+                    showFilterSheet = false
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = "Filter has been applied"
+                        )
+                    }
+                }
+            )
         }
     }
 }

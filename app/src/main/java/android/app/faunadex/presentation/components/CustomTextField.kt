@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun CustomTextField(
@@ -51,7 +52,7 @@ fun CustomTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(label, fontFamily = PoppinsFont, color = AlmostBlack.copy(.8f)) },
+        placeholder = { Text(label, fontFamily = PoppinsFont, color = AlmostBlack.copy(.8f), fontSize = 14.sp) },
         modifier = modifier
             .fillMaxWidth()
             .border(
