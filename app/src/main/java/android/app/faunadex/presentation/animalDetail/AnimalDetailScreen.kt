@@ -9,10 +9,15 @@ fun AnimalDetailScreen() {
  
 }
 
+@Composable
+fun AnimalDetailContent() {
+
+}
+
 @Preview(showBackground = true)
 @Composable
 fun AnimalDetailScreenPreview() {
     FaunaDexTheme {
-        AnimalDetailScreen()
+        AnimalDetailContent()
     }
 }
