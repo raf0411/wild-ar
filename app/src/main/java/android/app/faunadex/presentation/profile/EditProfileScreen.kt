@@ -113,7 +113,6 @@ private fun EditProfileContent(
     var pendingUsername by remember { mutableStateOf("") }
     var pendingEducationLevel by remember { mutableStateOf("") }
 
-
     Column(
         modifier = modifier
             .fillMaxSize()
