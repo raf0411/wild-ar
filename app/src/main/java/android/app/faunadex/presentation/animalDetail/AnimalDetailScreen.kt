@@ -142,7 +142,7 @@ fun AnimalDetailContent(
                 Text(
                     text = animal.name,
                     fontFamily = PoppinsFont,
-                    fontSize = 32.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = PastelYellow
                 )
@@ -153,7 +153,7 @@ fun AnimalDetailContent(
                     Text(
                         text = animal.scientificName,
                         fontFamily = PoppinsFont,
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         fontStyle = FontStyle.Italic,
                         color = MediumGreenSage
                     )
