@@ -6,7 +6,6 @@ import android.app.faunadex.ui.theme.FaunaDexTheme
 import android.app.faunadex.ui.theme.JerseyFont
 import android.app.faunadex.ui.theme.MediumGreenSage
 import android.app.faunadex.ui.theme.PastelYellow
-import android.app.faunadex.ui.theme.PoppinsFont
 import android.app.faunadex.ui.theme.PrimaryGreen
 import android.app.faunadex.ui.theme.PrimaryGreenLight
 import androidx.compose.animation.AnimatedVisibility
@@ -26,9 +25,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -46,9 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 
-/**
- * Dialog for displaying long animal descriptions with custom scrollbar
- */
 @Composable
 fun AnimalDescriptionDialog(
     description: String,
@@ -80,7 +74,6 @@ fun AnimalDescriptionDialog(
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Scrollable content with custom scrollbar
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -114,7 +107,6 @@ fun AnimalDescriptionDialog(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Close button at bottom
                     androidx.compose.material3.Button(
                         onClick = onDismiss,
                         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
@@ -138,10 +130,6 @@ fun AnimalDescriptionDialog(
     }
 }
 
-/**
- * Custom scrollbar with rounded capsule design
- * Background: DarkGreen, Indicator: PrimaryGreen
- */
 @Composable
 fun CustomScrollbar(
     scrollState: ScrollState,

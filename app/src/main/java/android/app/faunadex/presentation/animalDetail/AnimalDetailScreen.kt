@@ -435,13 +435,12 @@ fun InfoTabContent(
 
                     Text(
                         text = "Read more...",
-                        fontSize = 16.sp,
-                        color = PrimaryGreenLight,
-                        fontFamily = PoppinsFont,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp,
+                        color = PastelYellow,
+                        fontFamily = JerseyFont,
+                        textAlign = TextAlign.Justify,
                         modifier = Modifier
                             .clickable { showDescriptionDialog = true }
-                            .padding(vertical = 4.dp)
                     )
 
                     AnimalDescriptionDialog(
@@ -450,14 +449,6 @@ fun InfoTabContent(
                         showDialog = showDescriptionDialog
                     )
                 }
-
-                Text(
-                    text = "Read more...",
-                    fontSize = 18.sp,
-                    color = PastelYellow,
-                    fontFamily = JerseyFont,
-                    textAlign = TextAlign.Justify
-                )
 
                 Spacer(Modifier.height(32.dp))
 
