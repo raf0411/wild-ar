@@ -86,7 +86,7 @@ fun ConservationStatusBadge(
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
         Text(
-            text = if (showFullName) conservationStatus.fullName else conservationStatus.code,
+            text = if (showFullName) conservationStatus.fullName.uppercase() else conservationStatus.code,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = if (conservationStatus == IUCNStatus.DD || conservationStatus == IUCNStatus.NE) {

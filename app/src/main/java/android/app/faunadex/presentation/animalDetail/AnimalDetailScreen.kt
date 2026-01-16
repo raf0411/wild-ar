@@ -223,26 +223,28 @@ fun AnimalDetailContent(
 
                 Spacer(Modifier.height(32.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    RibbonBadge(
-                        icon = if (animal.diet.contains("Carnivore", ignoreCase = true)) {
-                            Icons.Outlined.Pets
-                        } else {
-                            Icons.Outlined.Eco
-                        },
-                        text = animal.diet.ifEmpty { "Omnivore" },
-                        hexagonBackgroundColor = PrimaryGreenLight
-                    )
+                if (shouldShowContent(userEducationLevel, minLevel = EducationLevelRequirement.SD)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        RibbonBadge(
+                            icon = if (animal.diet.contains("Carnivore", ignoreCase = true)) {
+                                Icons.Outlined.Pets
+                            } else {
+                                Icons.Outlined.Eco
+                            },
+                            text = animal.diet.ifEmpty { "Omnivore" },
+                            hexagonBackgroundColor = PrimaryGreenLight
+                        )
 
-                    RibbonBadge(
-                        icon = Icons.Outlined.Star,
-                        text = animal.specialTitle.ifEmpty { "Unique" },
-                        hexagonBackgroundColor = PrimaryGreenLight
-                    )
+                        RibbonBadge(
+                            icon = Icons.Outlined.Star,
+                            text = animal.specialTitle.ifEmpty { "Unique" },
+                            hexagonBackgroundColor = PrimaryGreenLight
+                        )
+                    }
                 }
             }
         }
