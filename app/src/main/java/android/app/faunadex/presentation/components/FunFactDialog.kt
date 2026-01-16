@@ -1,6 +1,7 @@
 package android.app.faunadex.presentation.components
 
 import android.app.faunadex.ui.theme.DarkForest
+import android.app.faunadex.ui.theme.FaunaDexTheme
 import android.app.faunadex.ui.theme.JerseyFont
 import android.app.faunadex.ui.theme.MediumGreenSage
 import android.app.faunadex.ui.theme.PastelYellow
@@ -185,11 +186,13 @@ fun FunFactDialog(
 @Preview(showBackground = true)
 @Composable
 fun FunFactDialogPreview() {
-    FunFactDialog(
-        title = "Fun Fact",
-        content = "Komodo dragons are the largest living lizards in the world. They can grow up to 3 meters in length and weigh up to 70 kilograms.\n" +
-                "These amazing creatures have been around for millions of years and are found only in Indonesia!",
-        onDismiss = {},
-        showDialog = true
-    )
+    FaunaDexTheme {
+        FunFactDialog(
+            title = "Fun Fact",
+            content = "Komodo dragons are the largest living lizards in the world. They can grow up to 3 meters in length and weigh up to 70 kilograms.\n" +
+                    "These amazing creatures have been around for millions of years and are found only in Indonesia!",
+            onDismiss = {},
+            showDialog = true
+        )
+    }
 }

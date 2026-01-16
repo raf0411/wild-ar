@@ -56,6 +56,7 @@ import android.app.faunadex.presentation.components.RarityBadge
 import android.app.faunadex.presentation.components.IconButton
 import android.app.faunadex.presentation.components.RibbonBadge
 import android.app.faunadex.presentation.components.FunFactDialog
+import android.app.faunadex.presentation.components.AnimalDescriptionDialog
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -423,6 +424,37 @@ fun InfoTabContent(
                     text = animal.description,
                     fontSize = 18.sp,
                     color = MediumGreenSage,
+                    fontFamily = JerseyFont,
+                    textAlign = TextAlign.Justify
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                if (userEducationLevel == "SMA") {
+                    var showDescriptionDialog by remember { mutableStateOf(false) }
+
+                    Text(
+                        text = "Read more...",
+                        fontSize = 16.sp,
+                        color = PrimaryGreenLight,
+                        fontFamily = PoppinsFont,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier
+                            .clickable { showDescriptionDialog = true }
+                            .padding(vertical = 4.dp)
+                    )
+
+                    AnimalDescriptionDialog(
+                        description = animal.description,
+                        onDismiss = { showDescriptionDialog = false },
+                        showDialog = showDescriptionDialog
+                    )
+                }
+
+                Text(
+                    text = "Read more...",
+                    fontSize = 18.sp,
+                    color = PastelYellow,
                     fontFamily = JerseyFont,
                     textAlign = TextAlign.Justify
                 )
