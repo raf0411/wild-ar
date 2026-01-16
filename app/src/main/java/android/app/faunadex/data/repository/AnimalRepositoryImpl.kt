@@ -48,7 +48,15 @@ class AnimalRepositoryImpl @Inject constructor(
                     latitude = document.getDouble("latitude") ?: 0.0,
                     longitude = document.getDouble("longitude") ?: 0.0,
                     country = document.getString("country") ?: "",
-                    city = document.getString("city") ?: ""
+                    city = document.getString("city") ?: "",
+                    domain = document.getString("domain") ?: "",
+                    kingdom = document.getString("kingdom") ?: "",
+                    phylum = document.getString("phylum") ?: "",
+                    taxonomyClass = document.getString("class") ?: "",
+                    order = document.getString("order") ?: "",
+                    family = document.getString("family") ?: "",
+                    genus = document.getString("genus") ?: "",
+                    species = document.getString("species") ?: ""
                 )
 
                 Log.d("AnimalRepositoryImpl", "Animal object created - name: '${animal.name}'")
@@ -94,7 +102,15 @@ class AnimalRepositoryImpl @Inject constructor(
                         latitude = document.getDouble("latitude") ?: 0.0,
                         longitude = document.getDouble("longitude") ?: 0.0,
                         country = document.getString("country") ?: "",
-                        city = document.getString("city") ?: ""
+                        city = document.getString("city") ?: "",
+                        domain = document.getString("domain") ?: "",
+                        kingdom = document.getString("kingdom") ?: "",
+                        phylum = document.getString("phylum") ?: "",
+                        taxonomyClass = document.getString("class") ?: "",
+                        order = document.getString("order") ?: "",
+                        family = document.getString("family") ?: "",
+                        genus = document.getString("genus") ?: "",
+                        species = document.getString("species") ?: ""
                     )
                 } catch (e: Exception) {
                     Log.e("AnimalRepositoryImpl", "Error parsing animal document", e)
@@ -144,7 +160,15 @@ class AnimalRepositoryImpl @Inject constructor(
                         latitude = document.getDouble("latitude") ?: 0.0,
                         longitude = document.getDouble("longitude") ?: 0.0,
                         country = document.getString("country") ?: "",
-                        city = document.getString("city") ?: ""
+                        city = document.getString("city") ?: "",
+                        domain = document.getString("domain") ?: "",
+                        kingdom = document.getString("kingdom") ?: "",
+                        phylum = document.getString("phylum") ?: "",
+                        taxonomyClass = document.getString("class") ?: "",
+                        order = document.getString("order") ?: "",
+                        family = document.getString("family") ?: "",
+                        genus = document.getString("genus") ?: "",
+                        species = document.getString("species") ?: ""
                     )
                 } catch (e: Exception) {
                     Log.e("AnimalRepositoryImpl", "Error parsing animal document", e)

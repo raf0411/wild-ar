@@ -81,6 +81,30 @@ data class Animal(
     val country: String = "",
 
     @PropertyName("city")
-    val city: String = ""
+    val city: String = "",
+
+    @PropertyName("domain")
+    val domain: String = "",
+
+    @PropertyName("kingdom")
+    val kingdom: String = "",
+
+    @PropertyName("phylum")
+    val phylum: String = "",
+
+    @PropertyName("class")
+    val taxonomyClass: String = "",
+
+    @PropertyName("order")
+    val order: String = "",
+
+    @PropertyName("family")
+    val family: String = "",
+
+    @PropertyName("genus")
+    val genus: String = "",
+
+    @PropertyName("species")
+    val species: String = ""
 )
 

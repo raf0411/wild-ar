@@ -5,11 +5,16 @@ import android.app.faunadex.domain.model.EducationLevel
 import android.app.faunadex.presentation.components.FaunaTopBarWithBack
 import android.app.faunadex.ui.theme.BlueOcean
 import android.app.faunadex.ui.theme.DarkForest
+import android.app.faunadex.ui.theme.DarkGreen
 import android.app.faunadex.ui.theme.ErrorRed
 import android.app.faunadex.ui.theme.FaunaDexTheme
+import android.app.faunadex.ui.theme.JerseyFont
+import android.app.faunadex.ui.theme.MediumGreenSage
 import android.app.faunadex.ui.theme.PastelYellow
 import android.app.faunadex.ui.theme.PoppinsFont
 import android.app.faunadex.ui.theme.PrimaryBlue
+import android.app.faunadex.ui.theme.PrimaryGreenLight
+import android.app.faunadex.ui.theme.PrimaryGreenLime
 import android.app.faunadex.ui.theme.White
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,9 +56,6 @@ import android.app.faunadex.presentation.components.RarityBadge
 import android.app.faunadex.presentation.components.IconButton
 import android.app.faunadex.presentation.components.RibbonBadge
 import android.app.faunadex.presentation.components.FunFactDialog
-import android.app.faunadex.ui.theme.JerseyFont
-import android.app.faunadex.ui.theme.MediumGreenSage
-import android.app.faunadex.ui.theme.PrimaryGreenLight
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -189,7 +191,8 @@ fun AnimalDetailContent(
                 if (shouldShowContent(userEducationLevel, minLevel = EducationLevelRequirement.SMP)) {
                     TabIndicators(
                         selectedTab = selectedTab,
-                        onTabSelected = { selectedTab = it }
+                        onTabSelected = { selectedTab = it },
+                        userEducationLevel = userEducationLevel
                     )
 
                     Spacer(Modifier.height(24.dp))
@@ -210,6 +213,9 @@ fun AnimalDetailContent(
                     AnimalDetailTab.HABITAT -> {
                         HabitatTabContent(animal = animal)
                     }
+                    AnimalDetailTab.TAXONOMY -> {
+                        TaxonomyTabContent(animal = animal)
+                    }
                 }
             }
         }
@@ -219,24 +225,35 @@ fun AnimalDetailContent(
 enum class AnimalDetailTab(val title: String) {
     INFO("Info"),
     POPULATION("Population"),
-    HABITAT("Habitat")
+    HABITAT("Habitat"),
+    TAXONOMY("Taxonomy")
 }
 
 @Composable
 fun TabIndicators(
     selectedTab: AnimalDetailTab,
     onTabSelected: (AnimalDetailTab) -> Unit,
+    userEducationLevel: String,
     modifier: Modifier = Modifier
 ) {
+    val availableTabs = if (userEducationLevel == "SMA") {
+        AnimalDetailTab.entries
+    } else {
+        AnimalDetailTab.entries.filter { it != AnimalDetailTab.TAXONOMY }
+    }
+
+    val hasFourTabs = availableTabs.size == 4
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        AnimalDetailTab.entries.forEach { tab ->
+        availableTabs.forEach { tab ->
             TabItem(
                 text = tab.title,
                 isSelected = selectedTab == tab,
-                onClick = { onTabSelected(tab) }
+                onClick = { onTabSelected(tab) },
+                isCompact = hasFourTabs
             )
         }
     }
@@ -247,18 +264,19 @@ fun TabItem(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isCompact: Boolean = false
 ) {
     Column(
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = if (isCompact) 4.dp else 8.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = text,
             fontFamily = JerseyFont,
-            fontSize = 22.sp,
+            fontSize = if (isCompact) 18.sp else 22.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             color = if (isSelected) PastelYellow else MediumGreenSage
         )
@@ -267,7 +285,7 @@ fun TabItem(
 
         Box(
             modifier = Modifier
-                .width(if (isSelected) 60.dp else 0.dp)
+                .width(if (isSelected) (if (isCompact) 50.dp else 60.dp) else 0.dp)
                 .height(3.dp)
                 .background(
                     color = if (isSelected) PastelYellow else Color.Transparent,
@@ -520,12 +538,11 @@ fun PopulationBarChart(
         targetValue = if (animate) presentPercentage else 0f,
         animationSpec = tween(
             durationMillis = 1200,
-            delayMillis = 400 // Slight delay so present animates after past starts
+            delayMillis = 400
         ),
         label = "presentPercentageAnimation"
     )
 
-    // Animated population values for the text display
     val animatedPastPopulation by remember {
         derivedStateOf {
             (pastPopulation * animatedPastPercentage / pastPercentage.coerceAtLeast(0.001f)).toInt()
@@ -636,9 +653,6 @@ fun PopulationBar(
     }
 }
 
-/**
- * Format population number with thousands separator
- */
 private fun formatPopulationNumber(population: Int): String {
     return if (population == 0) {
         "No data"
@@ -652,7 +666,6 @@ fun HabitatTabContent(animal: Animal) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Title
         Text(
             text = "Habitat",
             fontFamily = PoppinsFont,
@@ -663,7 +676,6 @@ fun HabitatTabContent(animal: Animal) {
 
         Spacer(Modifier.height(16.dp))
 
-        // Map Placeholder (ready for Google Maps integration)
         HabitatMapPlaceholder(
             latitude = animal.latitude,
             longitude = animal.longitude,
@@ -681,15 +693,6 @@ fun HabitatTabContent(animal: Animal) {
     }
 }
 
-/**
- * Map placeholder component - designed for easy Google Maps integration
- * TODO: Replace with actual Google Maps implementation
- *
- * To integrate Google Maps later:
- * 1. Add Google Maps dependency in build.gradle
- * 2. Replace this composable with GoogleMap composable
- * 3. Use the latitude and longitude parameters for camera position
- */
 @Composable
 fun HabitatMapPlaceholder(
     latitude: Double,
@@ -700,7 +703,7 @@ fun HabitatMapPlaceholder(
         modifier = modifier
             .height(250.dp)
             .background(
-                color = Color(0xFF2C3E2E), // Dark forest green
+                color = Color(0xFF2C3E2E),
                 shape = RoundedCornerShape(16.dp)
             )
             .border(
@@ -714,7 +717,6 @@ fun HabitatMapPlaceholder(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Map icon placeholder
             Icon(
                 imageVector = Icons.Outlined.Place,
                 contentDescription = "Map Location",
@@ -748,9 +750,6 @@ fun HabitatMapPlaceholder(
     }
 }
 
-/**
- * Display location information (country, city, habitat description)
- */
 @Composable
 fun HabitatLocationInfo(
     country: String,
@@ -762,7 +761,6 @@ fun HabitatLocationInfo(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Location (Country & City)
         if (country.isNotEmpty() || city.isNotEmpty()) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -796,7 +794,6 @@ fun HabitatLocationInfo(
             }
         }
 
-        // Habitat Description
         if (habitat.isNotEmpty()) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -832,15 +829,224 @@ fun HabitatLocationInfo(
     }
 }
 
-/**
- * Format location string with country and city
- */
 private fun formatLocation(country: String, city: String): String {
     return when {
         country.isNotEmpty() && city.isNotEmpty() -> "$city, $country"
         country.isNotEmpty() -> country
         city.isNotEmpty() -> city
         else -> "Location not specified"
+    }
+}
+
+@Composable
+fun TaxonomyTabContent(animal: Animal) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "Taxonomy Classification",
+            fontFamily = PoppinsFont,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = PastelYellow
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            TaxonomyIndicatorColumn(
+                modifier = Modifier.width(60.dp)
+            )
+
+            TaxonomyTable(
+                domain = animal.domain,
+                kingdom = animal.kingdom,
+                phylum = animal.phylum,
+                taxonomyClass = animal.taxonomyClass,
+                order = animal.order,
+                family = animal.family,
+                genus = animal.genus,
+                species = animal.species,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+fun TaxonomyIndicatorColumn(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "▲",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryGreenLight
+            )
+            Text(
+                text = "Less\nSpecific",
+                fontFamily = PoppinsFont,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = PrimaryGreenLight,
+                textAlign = TextAlign.Center,
+                lineHeight = 12.sp
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(320.dp)
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                            PrimaryGreenLight,
+                            Color(0xFF89A257),
+                            DarkGreen
+                        )
+                    ),
+                    shape = RoundedCornerShape(2.dp)
+                )
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "More\nSpecific",
+                fontFamily = PoppinsFont,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF89A257),
+                textAlign = TextAlign.Center,
+                lineHeight = 12.sp
+            )
+            Text(
+                text = "▼",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF89A257)
+            )
+        }
+    }
+}
+
+@Composable
+fun TaxonomyTable(
+    domain: String,
+    kingdom: String,
+    phylum: String,
+    taxonomyClass: String,
+    order: String,
+    family: String,
+    genus: String,
+    species: String,
+    modifier: Modifier = Modifier
+) {
+    val taxonomyLevels = listOf(
+        "Domain" to domain,
+        "Kingdom" to kingdom,
+        "Phylum" to phylum,
+        "Class" to taxonomyClass,
+        "Order" to order,
+        "Family" to family,
+        "Genus" to genus,
+        "Species" to species
+    )
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        taxonomyLevels.forEachIndexed { index, (label, value) ->
+            val gradient = index / 7f
+            TaxonomyRow(
+                label = label,
+                value = value.ifEmpty { "-" },
+                gradientPosition = gradient
+            )
+        }
+    }
+}
+
+@Composable
+fun TaxonomyRow(
+    label: String,
+    value: String,
+    gradientPosition: Float,
+    modifier: Modifier = Modifier
+) {
+    val labelBgColor = Color(
+        red = (190 + (23 - 190) * gradientPosition) / 255f,
+        green = (220 + (58 - 220) * gradientPosition) / 255f,
+        blue = (127 + (37 - 127) * gradientPosition) / 255f
+    )
+
+    val valueBgColor = Color(
+        red = (65 + (23 - 65) * gradientPosition) / 255f,
+        green = (120 + (58 - 120) * gradientPosition) / 255f,
+        blue = (69 + (37 - 69) * gradientPosition) / 255f
+    )
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .weight(0.4f)
+                .background(
+                    color = labelBgColor,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .padding(vertical = 12.dp, horizontal = 16.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = label,
+                fontFamily = JerseyFont,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (gradientPosition < 0.6f) DarkGreen else PrimaryGreenLight
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .weight(0.6f)
+                .background(
+                    color = valueBgColor,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .padding(vertical = 12.dp, horizontal = 16.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = value,
+                fontFamily = JerseyFont,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium,
+                color = PrimaryGreenLime
+            )
+        }
     }
 }
 
@@ -877,7 +1083,15 @@ fun AnimalDetailScreenSDPreview() {
                     latitude = -8.5569,
                     longitude = 119.4869,
                     country = "Indonesia",
-                    city = "Komodo National Park"
+                    city = "Komodo National Park",
+                    domain = "Eukaryota",
+                    kingdom = "Animalia",
+                    phylum = "Chordata",
+                    taxonomyClass = "Reptilia",
+                    order = "Squamata",
+                    family = "Varanidae",
+                    genus = "Varanus",
+                    species = "V. komodoensis"
                 ),
                 onAudioClick = {},
                 userEducationLevel = "SD"
@@ -922,7 +1136,15 @@ fun AnimalDetailScreenSMPPreview() {
                     latitude = -8.5569,
                     longitude = 119.4869,
                     country = "Indonesia",
-                    city = "Komodo National Park"
+                    city = "Komodo National Park",
+                    domain = "Eukaryota",
+                    kingdom = "Animalia",
+                    phylum = "Chordata",
+                    taxonomyClass = "Reptilia",
+                    order = "Squamata",
+                    family = "Varanidae",
+                    genus = "Varanus",
+                    species = "V. komodoensis"
                 ),
                 onAudioClick = {},
                 userEducationLevel = "SMP"
@@ -968,7 +1190,15 @@ fun AnimalDetailScreenSMAPreview() {
                     latitude = -8.5569,
                     longitude = 119.4869,
                     country = "Indonesia",
-                    city = "Komodo National Park"
+                    city = "Komodo National Park",
+                    domain = "Eukaryota",
+                    kingdom = "Animalia",
+                    phylum = "Chordata",
+                    taxonomyClass = "Reptilia",
+                    order = "Squamata",
+                    family = "Varanidae",
+                    genus = "Varanus",
+                    species = "V. komodoensis"
                 ),
                 onAudioClick = {},
                 userEducationLevel = "SMA"
@@ -986,22 +1216,12 @@ private fun getEducationLevelWithColor(level: String): EducationLevel {
     }
 }
 
-/**
- * Education level requirement enum for content visibility
- * SD = 1, SMP = 2, SMA = 3
- */
 enum class EducationLevelRequirement(val level: Int) {
     SD(1),
     SMP(2),
     SMA(3)
 }
 
-/**
- * Helper function to determine if content should be shown based on user's education level
- * @param userLevel Current user's education level (SD, SMP, or SMA)
- * @param minLevel Minimum education level required to view the content
- * @return true if user's level meets or exceeds the minimum requirement
- */
 private fun shouldShowContent(
     userLevel: String,
     minLevel: EducationLevelRequirement
