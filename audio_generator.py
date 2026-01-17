@@ -1,17 +1,3 @@
-"""
-Audio Generator Script for FaunaDex
-Generates audio narrations using 11Labs API and uploads to Supabase Storage
-
-Requirements:
-    pip install requests firebase-admin supabase
-
-Environment Variables:
-    ELEVENLABS_API_KEY: Your 11Labs API key
-    SUPABASE_URL: Your Supabase project URL (e.g., https://xxxxx.supabase.co)
-    SUPABASE_KEY: Your Supabase service role key (anon key)
-    SUPABASE_BUCKET: Your Supabase storage bucket name (default: faunadex-audio)
-"""
-
 import os
 import json
 import requests
@@ -20,19 +6,16 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from supabase import create_client, Client
 
-# Configuration
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip('/') + '/'
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "faunadex-audio")
 
-# 11Labs Voice IDs (you can change these)
-VOICE_ID_SD = "EXAVITQu4vr4xnSDxMaL"  # Sarah - friendly, clear for kids
-VOICE_ID_SMP = "21m00Tcm4TlvDq8ikWAM"  # Rachel - mature, engaging
-VOICE_ID_SMA = "21m00Tcm4TlvDq8ikWAM"  # Rachel - same for SMA
+VOICE_ID_SD = "EXAVITQu4vr4xnSDxMaL"
+VOICE_ID_SMP = "21m00Tcm4TlvDq8ikWAM"
+VOICE_ID_SMA = "21m00Tcm4TlvDq8ikWAM"
 
-# Initialize Firebase (adjust path to your service account key)
-SERVICE_ACCOUNT_KEY = "path/to/your/serviceAccountKey.json"
+SERVICE_ACCOUNT_KEY = "serviceAccountKey.json"
 
 def init_firebase():
     """Initialize Firebase Admin SDK"""
@@ -57,7 +40,7 @@ def generate_audio_elevenlabs(text, voice_id, output_path):
 
     data = {
         "text": text,
-        "model_id": "eleven_multilingual_v2",  # Supports Indonesian
+        "model_id": "eleven_multilingual_v2",
         "voice_settings": {
             "stability": 0.5,
             "similarity_boost": 0.75,
@@ -85,14 +68,12 @@ def upload_to_supabase(local_path, storage_path):
         with open(local_path, 'rb') as f:
             file_content = f.read()
 
-        # Upload to Supabase Storage
         response = supabase.storage.from_(SUPABASE_BUCKET).upload(
             storage_path,
             file_content,
             file_options={"content-type": "audio/mpeg"}
         )
 
-        # Get public URL
         public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(storage_path)
         print(f"✓ Uploaded to Supabase: {public_url}")
         return public_url
@@ -126,25 +107,20 @@ def process_animal(animal_data, temp_dir):
     print(f"Processing: {animal_name} (ID: {animal_id})")
     print(f"{'='*60}")
 
-    # Skip if no description
     if not description:
         print("✗ No description found, skipping...")
         return False
 
-    # Choose voice based on education level (you can customize this)
-    voice_id = VOICE_ID_SMP  # Default voice
+    voice_id = VOICE_ID_SMP
 
-    # Generate description audio
     desc_filename = f"{animal_id}_description.mp3"
     desc_local_path = temp_dir / desc_filename
 
     print(f"Generating description audio...")
     if generate_audio_elevenlabs(description, voice_id, desc_local_path):
-        # Upload to Supabase
         desc_storage_path = f"audio/descriptions/{desc_filename}"
         desc_url = upload_to_supabase(desc_local_path, desc_storage_path)
 
-        # Generate fun fact audio (if available)
         funfact_url = None
         if fun_fact:
             print(f"Generating fun fact audio...")
@@ -155,7 +131,6 @@ def process_animal(animal_data, temp_dir):
                 funfact_storage_path = f"audio/funfacts/{funfact_filename}"
                 funfact_url = upload_to_supabase(funfact_local_path, funfact_storage_path)
 
-        # Update Firestore
         if desc_url:
             update_firestore_audio_url(animal_id, desc_url, funfact_url)
             return True
@@ -164,7 +139,6 @@ def process_animal(animal_data, temp_dir):
 
 def main():
     """Main function to process all animals"""
-    # Validate environment variables
     required_vars = [
         "ELEVENLABS_API_KEY",
         "SUPABASE_URL",
@@ -177,14 +151,11 @@ def main():
         print(f"✗ Missing environment variables: {', '.join(missing_vars)}")
         return
 
-    # Create temp directory for audio files
     temp_dir = Path("temp_audio")
     temp_dir.mkdir(exist_ok=True)
 
-    # Initialize Firebase
     db = init_firebase()
 
-    # Fetch all animals from Firestore
     print("Fetching animals from Firestore...")
     animals_ref = db.collection('animals')
     animals = animals_ref.stream()
