@@ -58,10 +58,12 @@ class AnimalRepositoryImpl @Inject constructor(
                     family = document.getString("family") ?: "",
                     genus = document.getString("genus") ?: "",
                     species = document.getString("species") ?: "",
-                    arModelUrl = document.getString("ar_model_url")
+                    arModelUrl = document.getString("ar_model_url"),
+                    audioDescriptionUrl = document.getString("audio_description_url") ?: "",
+                    audioFunFactUrl = document.getString("audio_fun_fact_url") ?: ""
                 )
 
-                Log.d("AnimalRepositoryImpl", "Animal object created - name: '${animal.name}'")
+                Log.d("AnimalRepositoryImpl", "Animal object created - name: '${animal.name}', audio: '${animal.audioDescriptionUrl}'")
                 Result.success(animal)
             } else {
                 Result.failure(Exception("Animal not found"))

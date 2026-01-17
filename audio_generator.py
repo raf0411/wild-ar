@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+import shutil
 from pathlib import Path
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -181,6 +182,15 @@ def main():
     print(f"Success: {success_count}")
     print(f"Failed: {fail_count}")
     print(f"{'='*60}")
+
+    if success_count > 0:
+        print(f"\nCleaning up temporary files...")
+        try:
+            shutil.rmtree(temp_dir)
+            print(f"✓ Temporary files cleaned up")
+        except Exception as e:
+            print(f"✗ Failed to clean up temp files: {e}")
+            print(f"  You can manually delete the '{temp_dir}' folder")
 
 if __name__ == "__main__":
     main()
