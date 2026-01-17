@@ -29,6 +29,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +42,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -250,6 +255,11 @@ private fun AudioPlayingContent(
     onPlayPauseClick: () -> Unit,
     onSeekTo: (Long) -> Unit
 ) {
+    var isDragging by remember { mutableStateOf(false) }
+    var dragPosition by remember { mutableStateOf(0f) }
+
+    val displayPosition = if (isDragging) dragPosition else currentPosition.toFloat()
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
@@ -261,19 +271,59 @@ private fun AudioPlayingContent(
             Spacer(Modifier.height(80.dp))
         }
 
-        IconButton(
-            onClick = onPlayPauseClick,
-            modifier = Modifier
-                .size(72.dp)
-                .clip(CircleShape)
-                .background(PastelYellow)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
-                tint = DarkForest,
-                modifier = Modifier.size(36.dp)
-            )
+            IconButton(
+                onClick = {
+                    val newPosition = (currentPosition - 10000L).coerceAtLeast(0L)
+                    onSeekTo(newPosition)
+                },
+                modifier = Modifier.size(56.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.SkipPrevious,
+                    contentDescription = "Skip backward 10s",
+                    tint = PastelYellow,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+
+            Spacer(Modifier.width(16.dp))
+
+            IconButton(
+                onClick = onPlayPauseClick,
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(PastelYellow)
+            ) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    tint = DarkForest,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+
+            Spacer(Modifier.width(16.dp))
+
+            IconButton(
+                onClick = {
+                    val newPosition = (currentPosition + 10000L).coerceAtMost(duration)
+                    onSeekTo(newPosition)
+                },
+                modifier = Modifier.size(56.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.SkipNext,
+                    contentDescription = "Skip forward 10s",
+                    tint = PastelYellow,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
         }
 
         Spacer(Modifier.height(24.dp))
@@ -286,7 +336,7 @@ private fun AudioPlayingContent(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = formatTime(currentPosition),
+                    text = formatTime(displayPosition.toLong()),
                     fontFamily = PoppinsFont,
                     fontSize = 14.sp,
                     color = MediumGreenSage
@@ -302,9 +352,14 @@ private fun AudioPlayingContent(
             Spacer(Modifier.height(8.dp))
 
             Slider(
-                value = if (duration > 0) currentPosition.toFloat() else 0f,
-                onValueChange = { newPosition ->
-                    onSeekTo(newPosition.toLong())
+                value = displayPosition,
+                onValueChange = { newValue ->
+                    isDragging = true
+                    dragPosition = newValue
+                },
+                onValueChangeFinished = {
+                    onSeekTo(dragPosition.toLong())
+                    isDragging = false
                 },
                 valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
                 modifier = Modifier.fillMaxWidth(),
