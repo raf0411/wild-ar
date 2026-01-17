@@ -121,7 +121,6 @@ fun AudioPlayerDialog(
 
                 Spacer(Modifier.height(24.dp))
 
-                // Content based on playback state
                 when (playbackState) {
                     is AudioPlaybackState.ERROR -> {
                         AudioErrorContent(message = playbackState.message)
@@ -129,7 +128,7 @@ fun AudioPlayerDialog(
                     AudioPlaybackState.IDLE -> {
                         AudioIdleContent(
                             onPlayClick = onPlayPauseClick,
-                            showPlayButton = duration > 0L // Show play button if audio was loaded before
+                            showPlayButton = duration > 0L
                         )
                     }
                     AudioPlaybackState.LOADING -> {
