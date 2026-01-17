@@ -113,7 +113,6 @@ private fun EditProfileContent(
     var pendingUsername by remember { mutableStateOf("") }
     var pendingEducationLevel by remember { mutableStateOf("") }
 
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -161,7 +160,6 @@ private fun EditProfileContent(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Save Button
         Button(
             onClick = {
                 pendingUsername = username
@@ -188,19 +186,15 @@ private fun EditProfileContent(
         Spacer(modifier = Modifier.height(16.dp))
     }
 
-    // First confirmation dialog - Edit Profile
     ConfirmationDialog(
         title = "Edit Profile",
         message = "Are you sure you want to edit your profile?",
         confirmText = "Confirm",
         cancelText = "Cancel",
         onConfirm = {
-            // Check if education level changed
             if (pendingEducationLevel != user.educationLevel) {
-                // Show second confirmation for education level
                 showEducationLevelDialog = true
             } else {
-                // Only username changed, save directly
                 onSave(pendingUsername, pendingEducationLevel)
             }
         },
@@ -208,14 +202,12 @@ private fun EditProfileContent(
         showDialog = showEditProfileDialog
     )
 
-    // Second confirmation dialog - Education Level Change
     ConfirmationDialog(
         title = "Changing Education Level",
         message = "This will change all of the quizzes and changes the animal detail content. Are you sure you want to edit your education level?",
         confirmText = "Confirm",
         cancelText = "Cancel",
         onConfirm = {
-            // Save the changes
             onSave(pendingUsername, pendingEducationLevel)
             showEditProfileDialog = false
         },

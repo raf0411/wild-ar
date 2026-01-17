@@ -4,6 +4,7 @@ import android.app.faunadex.ui.theme.AlmostBlack
 import android.app.faunadex.ui.theme.ErrorRed
 import android.app.faunadex.ui.theme.FaunaDexTheme
 import android.app.faunadex.ui.theme.PastelYellow
+import android.app.faunadex.ui.theme.PoppinsFont
 import android.app.faunadex.ui.theme.PrimaryGreenPale
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun CustomTextField(
@@ -35,7 +37,8 @@ fun CustomTextField(
     isPassword: Boolean = false,
     enabled: Boolean = true,
     singleLine: Boolean = true,
-    isError: Boolean = false
+    isError: Boolean = false,
+    leadingIcon: @Composable (() -> Unit)? = null
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
     val borderShape = RoundedCornerShape(16.dp)
@@ -49,7 +52,7 @@ fun CustomTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(label, color = AlmostBlack.copy(.8f)) },
+        placeholder = { Text(label, fontFamily = PoppinsFont, color = AlmostBlack.copy(.8f), fontSize = 14.sp) },
         modifier = modifier
             .fillMaxWidth()
             .border(
@@ -65,6 +68,7 @@ fun CustomTextField(
         } else {
             VisualTransformation.None
         },
+        leadingIcon = leadingIcon,
         trailingIcon = if (isPassword) {
             {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {

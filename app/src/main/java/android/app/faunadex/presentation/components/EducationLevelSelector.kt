@@ -1,5 +1,6 @@
 package android.app.faunadex.presentation.components
 
+import android.app.faunadex.domain.model.EducationLevel
 import android.app.faunadex.ui.theme.AlmostBlack
 import android.app.faunadex.ui.theme.BlueOcean
 import android.app.faunadex.ui.theme.DarkGreenMoss
@@ -52,18 +53,12 @@ fun EducationLevelSelector(
                 onClick = { onLevelSelected(level.name) },
                 enabled = enabled
             )
-            // Add spacing between options except after the last one
             if (index < levels.size - 1) {
                 Spacer(modifier = Modifier.width(4.dp))
             }
         }
     }
 }
-
-private data class EducationLevel(
-    val name: String,
-    val badgeColor: Color
-)
 
 @Composable
 private fun EducationLevelOption(
@@ -80,7 +75,6 @@ private fun EducationLevelOption(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Circle selector on the left
         Box(
             modifier = Modifier
                 .size(24.dp)
@@ -95,7 +89,6 @@ private fun EducationLevelOption(
                 )
         )
 
-        // Badge on the right
         Box(
             modifier = Modifier
                 .background(

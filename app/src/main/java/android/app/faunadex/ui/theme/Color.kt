@@ -1,5 +1,6 @@
 package android.app.faunadex.ui.theme
 
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 // Primary Brand Colors
@@ -75,3 +76,10 @@ val BlackAlpha50 = Color(0x80000000) // 50% alpha
 val BlackAlpha60 = Color(0x99000000) // 60% alpha
 val BlackAlpha38 = Color(0x61000000) // 38% alpha
 val BlackAlpha30 = Color(0x4D000000) // 30% alpha
+
+// Gradients
+val GreenGradient = Brush.horizontalGradient(
+    0.05f to MediumGreen,
+    1.0f to DarkSlate
+)
+

@@ -2,8 +2,11 @@ package android.app.faunadex.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import android.app.faunadex.presentation.animalDetail.AnimalDetailScreen
 import android.app.faunadex.presentation.auth.login.LoginScreen
 import android.app.faunadex.presentation.auth.onboarding.OnboardingScreen
 import android.app.faunadex.presentation.auth.register.RegisterScreen
@@ -78,6 +81,24 @@ fun NavGraph(
                     navController.navigate(Screen.Profile.route) {
                         launchSingleTop = true
                     }
+                },
+                onNavigateToAnimalDetail = { animalId ->
+                    navController.navigate(Screen.AnimalDetail.createRoute(animalId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.AnimalDetail.route,
+            arguments = listOf(
+                navArgument("animalId") {
+                    type = NavType.StringType
+                }
+            )
+        ) {
+            AnimalDetailScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
