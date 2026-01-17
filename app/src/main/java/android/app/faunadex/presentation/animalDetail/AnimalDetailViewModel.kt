@@ -26,9 +26,17 @@ class AnimalDetailViewModel @Inject constructor(
     private val animalId: String? = savedStateHandle.get<String>("animalId")
 
     val currentUserEducationLevel: String
-        get() = getCurrentUserUseCase()?.educationLevel ?: "SMA"
+        get() {
+            val user = getCurrentUserUseCase()
+            val level = user?.educationLevel?.takeIf { it.isNotBlank() } ?: "SMA"
+            Log.d("AnimalDetailViewModel", "Current user education level: '$level' (raw: '${user?.educationLevel}')")
+            return level
+        }
 
     init {
+        val user = getCurrentUserUseCase()
+        Log.d("AnimalDetailViewModel", "User info - uid: ${user?.uid}, email: ${user?.email}, level: '${user?.educationLevel}'")
+        Log.d("AnimalDetailViewModel", "Education level is blank: ${user?.educationLevel.isNullOrBlank()}")
         loadAnimalDetail()
     }
 

@@ -61,68 +61,73 @@ fun AnimalDescriptionDialog(
         )
     ) {
         Dialog(onDismissRequest = onDismiss) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = DarkForest
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Column(
+                Surface(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .width(500.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    color = DarkForest
                 ) {
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(400.dp)
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        val scrollState = rememberScrollState()
-
-                        Text(
-                            text = description,
-                            fontFamily = JerseyFont,
-                            fontSize = 16.sp,
-                            textAlign = TextAlign.Justify,
-                            fontWeight = FontWeight.Normal,
-                            color = MediumGreenSage,
-                            lineHeight = 24.sp,
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(end = 16.dp)
-                                .verticalScroll(scrollState)
-                        )
-                        if (scrollState.maxValue > 0) {
-                            CustomScrollbar(
-                                scrollState = scrollState,
+                                .height(400.dp)
+                        ) {
+                            val scrollState = rememberScrollState()
+
+                            Text(
+                                text = description,
+                                fontFamily = JerseyFont,
+                                fontSize = 16.sp,
+                                textAlign = TextAlign.Justify,
+                                fontWeight = FontWeight.Normal,
+                                color = MediumGreenSage,
+                                lineHeight = 24.sp,
                                 modifier = Modifier
-                                    .align(Alignment.CenterEnd)
-                                    .height(400.dp)
-                                    .width(12.dp)
+                                    .fillMaxWidth()
+                                    .padding(end = 16.dp)
+                                    .verticalScroll(scrollState)
+                            )
+
+                            if (scrollState.maxValue > 0) {
+                                CustomScrollbar(
+                                    scrollState = scrollState,
+                                    modifier = Modifier
+                                        .align(Alignment.CenterEnd)
+                                        .height(400.dp)
+                                        .width(12.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        androidx.compose.material3.Button(
+                            onClick = onDismiss,
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = PrimaryGreen,
+                                contentColor = androidx.compose.ui.graphics.Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .height(48.dp)
+                        ) {
+                            Text(
+                                text = "Close",
+                                fontFamily = JerseyFont,
+                                fontSize = 24.sp,
+                                color = PastelYellow
                             )
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    androidx.compose.material3.Button(
-                        onClick = onDismiss,
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = PrimaryGreen,
-                            contentColor = androidx.compose.ui.graphics.Color.White
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .height(48.dp)
-                    ) {
-                        Text(
-                            text = "Close",
-                            fontFamily = JerseyFont,
-                            fontSize = 24.sp,
-                            color = PastelYellow
-                        )
                     }
                 }
             }

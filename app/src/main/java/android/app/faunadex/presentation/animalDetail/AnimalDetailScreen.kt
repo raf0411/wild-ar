@@ -16,6 +16,7 @@ import android.app.faunadex.ui.theme.PrimaryBlue
 import android.app.faunadex.ui.theme.PrimaryGreenLight
 import android.app.faunadex.ui.theme.PrimaryGreenLime
 import android.app.faunadex.ui.theme.White
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -92,6 +93,11 @@ fun AnimalDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val userEducationLevel = viewModel.currentUserEducationLevel
 
+    Log.d("AnimalDetailScreen", "======================================")
+    Log.d("AnimalDetailScreen", "Education Level in Screen: $userEducationLevel")
+    Log.d("AnimalDetailScreen", "UI State: ${uiState::class.simpleName}")
+    Log.d("AnimalDetailScreen", "======================================")
+
     Scaffold(
         topBar = {
             FaunaTopBarWithBack(
@@ -119,8 +125,11 @@ fun AnimalDetailScreen(
                 }
             }
             is AnimalDetailUiState.Success -> {
+                val animal = (uiState as AnimalDetailUiState.Success).animal
+                Log.d("AnimalDetailScreen", "SUCCESS STATE - Animal: ${animal.name}, Education: $userEducationLevel")
+
                 AnimalDetailContent(
-                    animal = (uiState as AnimalDetailUiState.Success).animal,
+                    animal = animal,
                     userEducationLevel = userEducationLevel,
                     onAudioClick = {},
                     modifier = Modifier.padding(paddingValues)
@@ -308,7 +317,7 @@ fun TabItem(
 
         Box(
             modifier = Modifier
-                .width(if (isSelected) (if (isCompact) 50.dp else 60.dp) else 0.dp)
+                .width(if (isCompact) 50.dp else 60.dp)
                 .height(3.dp)
                 .background(
                     color = if (isSelected) PastelYellow else Color.Transparent,
@@ -327,177 +336,198 @@ fun InfoTabContent(
 ) {
     var showFunFactDialog by remember { mutableStateOf(false) }
 
-    Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = animal.name,
-                            fontFamily = PoppinsFont,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PastelYellow
-                        )
+    val effectiveEducationLevel = userEducationLevel.takeIf { it.isNotBlank() } ?: "SMA"
+    Log.d("InfoTabContent", "Original level: '$userEducationLevel', Effective level: '$effectiveEducationLevel'")
 
-                        if (shouldShowContent(userEducationLevel, minLevel = EducationLevelRequirement.SMP)) {
-                            Spacer(Modifier.height(4.dp))
-
-                            Text(
-                                text = animal.scientificName,
-                                fontFamily = PoppinsFont,
-                                fontSize = 16.sp,
-                                fontStyle = FontStyle.Italic,
-                                color = MediumGreenSage
-                            )
-                        }
-
-                        Spacer(Modifier.height(16.dp))
-
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            ConservationStatusBadge(
-                                status = animal.conservationStatus,
-                                showFullName = true
-                            )
-
-                            when (userEducationLevel) {
-                                "SD" -> {
-                                    if (animal.rarityLevel.isNotEmpty()) {
-                                        RarityBadge(rarityLevel = animal.rarityLevel)
-                                    }
-                                    if (animal.endemicStatus.isNotEmpty()) {
-                                        EndemicStatusBadge(status = animal.endemicStatus)
-                                    }
-                                }
-                                "SMP" -> {
-                                    if (animal.endemicStatus.isNotEmpty()) {
-                                        EndemicStatusBadge(status = animal.endemicStatus)
-                                    }
-                                    if (animal.populationTrend.isNotEmpty()) {
-                                        PopulationTrendBadge(trend = animal.populationTrend)
-                                    }
-                                    if (animal.isProtected) {
-                                        ProtectedStatusBadge(
-                                            isProtected = animal.isProtected,
-                                            protectionType = animal.protectionType
-                                        )
-                                    }
-                                }
-                                "SMA" -> {
-                                    if (animal.endemicStatus.isNotEmpty()) {
-                                        EndemicStatusBadge(status = animal.endemicStatus)
-                                    }
-                                    if (animal.populationTrend.isNotEmpty()) {
-                                        PopulationTrendBadge(trend = animal.populationTrend)
-                                    }
-                                    if (animal.activityPeriod.isNotEmpty()) {
-                                        ActivityPeriodBadge(period = animal.activityPeriod)
-                                    }
-                                    if (animal.isProtected) {
-                                        ProtectedStatusBadge(
-                                            isProtected = animal.isProtected,
-                                            protectionType = animal.protectionType
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    IconButton(
-                        onClick = onAudioClick,
-                        icon = Icons.AutoMirrored.Outlined.VolumeUp
-                    )
-                }
-
-                Spacer(Modifier.height(24.dp))
-
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
-                    text = animal.description,
-                    fontSize = 18.sp,
-                    color = MediumGreenSage,
-                    fontFamily = JerseyFont,
-                    textAlign = TextAlign.Justify
+                    text = animal.name,
+                    fontFamily = PoppinsFont,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PastelYellow
                 )
 
-                Spacer(Modifier.height(8.dp))
-
-                if (userEducationLevel == "SMA") {
-                    var showDescriptionDialog by remember { mutableStateOf(false) }
+                if (shouldShowContent(effectiveEducationLevel, minLevel = EducationLevelRequirement.SMP)) {
+                    Spacer(Modifier.height(4.dp))
 
                     Text(
-                        text = "Read more...",
-                        fontSize = 18.sp,
-                        color = PastelYellow,
-                        fontFamily = JerseyFont,
-                        textAlign = TextAlign.Justify,
-                        modifier = Modifier
-                            .clickable { showDescriptionDialog = true }
-                    )
-
-                    AnimalDescriptionDialog(
-                        description = animal.description,
-                        onDismiss = { showDescriptionDialog = false },
-                        showDialog = showDescriptionDialog
+                        text = animal.scientificName,
+                        fontFamily = PoppinsFont,
+                        fontSize = 16.sp,
+                        fontStyle = FontStyle.Italic,
+                        color = MediumGreenSage
                     )
                 }
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    when (userEducationLevel) {
+                    ConservationStatusBadge(
+                        status = animal.conservationStatus,
+                        showFullName = true
+                    )
+
+                    when (effectiveEducationLevel) {
                         "SD" -> {
-                            RibbonBadge(
-                                icon = if (animal.diet.contains("Carnivore", ignoreCase = true)) {
-                                    Icons.Outlined.Pets
-                                } else {
-                                    Icons.Outlined.Eco
-                                },
-                                text = animal.diet.ifEmpty { "Omnivore" },
-                                hexagonBackgroundColor = PrimaryGreenLight
-                            )
-
-                            RibbonBadge(
-                                icon = Icons.Outlined.Star,
-                                text = animal.specialTitle.ifEmpty { "Unique" },
-                                hexagonBackgroundColor = PrimaryGreenLight
-                            )
+                            if (animal.rarityLevel.isNotEmpty()) {
+                                RarityBadge(rarityLevel = animal.rarityLevel)
+                            }
+                            if (animal.endemicStatus.isNotEmpty()) {
+                                EndemicStatusBadge(status = animal.endemicStatus)
+                            }
                         }
-                        "SMP", "SMA" -> {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                IconButton(
-                                    onClick = { showFunFactDialog = true },
-                                    icon = Icons.AutoMirrored.Outlined.HelpCenter,
-                                    size = 50.dp,
-                                    cornerRadius = 8.dp
+                        "SMP" -> {
+                            if (animal.endemicStatus.isNotEmpty()) {
+                                EndemicStatusBadge(status = animal.endemicStatus)
+                            }
+                            if (animal.populationTrend.isNotEmpty()) {
+                                PopulationTrendBadge(trend = animal.populationTrend)
+                            }
+                            if (animal.isProtected) {
+                                ProtectedStatusBadge(
+                                    isProtected = animal.isProtected,
+                                    protectionType = animal.protectionType
                                 )
-
-                                Text(
-                                    text = "Fun Fact",
-                                    fontFamily = JerseyFont,
-                                    color = MediumGreenSage,
-                                    fontSize = 20.sp
+                            }
+                        }
+                        "SMA" -> {
+                            if (animal.endemicStatus.isNotEmpty()) {
+                                EndemicStatusBadge(status = animal.endemicStatus)
+                            }
+                            if (animal.populationTrend.isNotEmpty()) {
+                                PopulationTrendBadge(trend = animal.populationTrend)
+                            }
+                            if (animal.activityPeriod.isNotEmpty()) {
+                                ActivityPeriodBadge(period = animal.activityPeriod)
+                            }
+                            if (animal.isProtected) {
+                                ProtectedStatusBadge(
+                                    isProtected = animal.isProtected,
+                                    protectionType = animal.protectionType
                                 )
                             }
                         }
                     }
                 }
             }
+
+            IconButton(
+                onClick = onAudioClick,
+                icon = Icons.AutoMirrored.Outlined.VolumeUp
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        Text(
+            text = animal.description,
+            fontSize = 18.sp,
+            color = MediumGreenSage,
+            fontFamily = JerseyFont,
+            textAlign = TextAlign.Justify
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        if (effectiveEducationLevel == "SMA") {
+            var showDescriptionDialog by remember { mutableStateOf(false) }
+
+            Text(
+                text = "Read more...",
+                fontSize = 18.sp,
+                color = PastelYellow,
+                fontFamily = JerseyFont,
+                textAlign = TextAlign.Justify,
+                modifier = Modifier
+                    .clickable { showDescriptionDialog = true }
+            )
+
+            AnimalDescriptionDialog(
+                description = animal.longDescription.ifEmpty { animal.description },
+                onDismiss = { showDescriptionDialog = false },
+                showDialog = showDescriptionDialog
+            )
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            when (effectiveEducationLevel) {
+                "SD" -> {
+                    Log.d("InfoTabContent", "Showing SD ribbons")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        RibbonBadge(
+                            icon = if (animal.diet.contains("Carnivore", ignoreCase = true)) {
+                                Icons.Outlined.Pets
+                            } else {
+                                Icons.Outlined.Eco
+                            },
+                            text = animal.diet.ifEmpty { "Omnivore" },
+                            hexagonBackgroundColor = PrimaryGreenLight,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        RibbonBadge(
+                            icon = Icons.Outlined.Star,
+                            text = animal.specialTitle.ifEmpty { "Unique" },
+                            hexagonBackgroundColor = PrimaryGreenLight,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                "SMP", "SMA" -> {
+                    Log.d("InfoTabContent", "Showing Fun Fact button for $effectiveEducationLevel")
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        IconButton(
+                            onClick = {
+                                Log.d("InfoTabContent", "Fun Fact button clicked")
+                                showFunFactDialog = true
+                            },
+                            icon = Icons.AutoMirrored.Outlined.HelpCenter,
+                            size = 50.dp,
+                            cornerRadius = 8.dp
+                        )
+
+                        Text(
+                            text = "Fun Fact",
+                            fontFamily = JerseyFont,
+                            color = MediumGreenSage,
+                            fontSize = 20.sp
+                        )
+                    }
+                }
+                else -> {
+                    Log.d("InfoTabContent", "Unknown education level: $effectiveEducationLevel")
+                }
+            }
+        }
+    }
 
     FunFactDialog(
         title = "Fun Fact",
@@ -683,7 +713,7 @@ fun PopulationBar(
                     fontFamily = PoppinsFont,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (percentage > 0.3f) White else color
+                    color = White
                 )
             }
         }

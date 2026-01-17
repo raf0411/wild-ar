@@ -4,12 +4,14 @@ import android.app.faunadex.domain.model.AuthResult
 import android.app.faunadex.domain.model.User
 import android.app.faunadex.domain.repository.AuthRepository
 import android.app.faunadex.domain.repository.UserRepository
+import android.util.Log
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -122,10 +124,33 @@ class AuthRepositoryImpl @Inject constructor(
     override fun getCurrentUser(): User? {
         val firebaseUser = firebaseAuth.currentUser
         return firebaseUser?.let {
-            User(
-                uid = it.uid,
-                email = it.email ?: ""
-            )
+            try {
+                val profileResult = runBlocking {
+                    userRepository.getUserProfile(it.uid)
+                }
+
+                if (profileResult.isSuccess) {
+                    val user = profileResult.getOrNull()
+                    Log.d("AuthRepositoryImpl", "Fetched user profile - education: '${user?.educationLevel}'")
+                    user
+                } else {
+                    Log.w("AuthRepositoryImpl", "Profile not found, returning basic user")
+                    // Fallback to basic user info
+                    User(
+                        uid = it.uid,
+                        email = it.email ?: "",
+                        educationLevel = "SMA" // Default fallback
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("AuthRepositoryImpl", "Error fetching user profile", e)
+                // Fallback to basic user info
+                User(
+                    uid = it.uid,
+                    email = it.email ?: "",
+                    educationLevel = "SMA" // Default fallback
+                )
+            }
         }
     }
 

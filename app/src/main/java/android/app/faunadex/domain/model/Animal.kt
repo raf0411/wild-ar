@@ -20,6 +20,9 @@ data class Animal(
     @PropertyName("description")
     val description: String = "",
 
+    @PropertyName("long_description")
+    val longDescription: String = "",
+
     @PropertyName("conservation_status")
     val conservationStatus: String = "",
 
