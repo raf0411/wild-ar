@@ -52,6 +52,7 @@ class UserRepositoryImpl @Inject constructor(
                 val profilePictureUrl = document.getString("profile_picture_url")
                 val currentTitle = document.getString("current_title") ?: "Petualang Pemula"
                 val totalXp = document.getLong("total_xp")?.toInt() ?: 0
+                val favoriteAnimalIds = document.get("favorite_animal_ids") as? List<String> ?: emptyList()
 
                 Log.d("UserRepositoryImpl", "Read from Firestore - education_level: '$educationLevel', username: '$username'")
 
@@ -63,6 +64,7 @@ class UserRepositoryImpl @Inject constructor(
                     educationLevel = educationLevel,
                     currentTitle = currentTitle,
                     totalXp = totalXp,
+                    favoriteAnimalIds = favoriteAnimalIds,
                     joinedAt = document.getTimestamp("joined_at")?.toDate()
                 )
 
@@ -144,6 +146,44 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         return Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, true)
+    }
+
+    override suspend fun addFavoriteAnimal(uid: String, animalId: String): Result<Unit> {
+        return try {
+            usersCollection.document(uid)
+                .update("favorite_animal_ids", FieldValue.arrayUnion(animalId))
+                .await()
+            Log.d("UserRepositoryImpl", "Added animal $animalId to favorites for user $uid")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("UserRepositoryImpl", "Error adding favorite animal", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun removeFavoriteAnimal(uid: String, animalId: String): Result<Unit> {
+        return try {
+            usersCollection.document(uid)
+                .update("favorite_animal_ids", FieldValue.arrayRemove(animalId))
+                .await()
+            Log.d("UserRepositoryImpl", "Removed animal $animalId from favorites for user $uid")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("UserRepositoryImpl", "Error removing favorite animal", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getFavoriteAnimalIds(uid: String): Result<List<String>> {
+        return try {
+            val document = usersCollection.document(uid).get().await()
+            val favoriteIds = document.get("favorite_animal_ids") as? List<String> ?: emptyList()
+            Log.d("UserRepositoryImpl", "Retrieved ${favoriteIds.size} favorite animals for user $uid")
+            Result.success(favoriteIds)
+        } catch (e: Exception) {
+            Log.e("UserRepositoryImpl", "Error getting favorite animals", e)
+            Result.failure(e)
+        }
     }
 }
 

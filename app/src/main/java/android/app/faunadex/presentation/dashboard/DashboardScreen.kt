@@ -99,6 +99,7 @@ fun DashboardScreenContent(
     var appliedFilterOptions by remember {
         mutableStateOf(
             listOf(
+                FilterOption("favorites", "My Favorites", false),
                 FilterOption("mammal", "Mammals", false),
                 FilterOption("bird", "Birds", false),
                 FilterOption("reptile", "Reptiles", false),
@@ -226,13 +227,15 @@ fun DashboardScreenContent(
                 appliedFilterOptions.filter { it.isSelected }.map { it.id }
             }
 
-            val filteredFaunaList = remember(animals, searchQuery, appliedFilterOptions) {
+            val filteredFaunaList = remember(animals, searchQuery, appliedFilterOptions, uiState.favoriteAnimalIds) {
                 var result = animals
 
                 if (selectedFilters.isNotEmpty()) {
                     result = result.filter { animal ->
                         selectedFilters.any { filter ->
                             when (filter) {
+                                "favorites" ->
+                                    uiState.favoriteAnimalIds.contains(animal.id)
                                 "mammal", "bird", "reptile", "amphibian", "fish" ->
                                     animal.category.equals(filter, ignoreCase = true)
                                 "endangered" ->
@@ -303,8 +306,10 @@ fun DashboardScreenContent(
                         faunaName = animal.name,
                         latinName = animal.scientificName,
                         imageUrl = animal.imageUrl,
-                        isFavorite = false, // TODO: Implement favorites
-                        onFavoriteClick = { /* TODO: Handle favorite toggle */ },
+                        isFavorite = uiState.favoriteAnimalIds.contains(animal.id),
+                        onFavoriteClick = {
+                            viewModel?.toggleFavorite(animal.id)
+                        },
                         onCardClick = {
                             onNavigateToAnimalDetail(animal.id)
                         }

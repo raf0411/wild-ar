@@ -21,6 +21,9 @@ data class User(
     @PropertyName("total_xp")
     val totalXp: Int = 0,
 
+    @PropertyName("favorite_animal_ids")
+    val favoriteAnimalIds: List<String> = emptyList(),
+
     @ServerTimestamp
     @PropertyName("joined_at")
     val joinedAt: Date? = null
