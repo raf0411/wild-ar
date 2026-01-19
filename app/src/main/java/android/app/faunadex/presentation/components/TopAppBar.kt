@@ -1,0 +1,293 @@
+package android.app.faunadex.presentation.components
+
+import android.app.faunadex.ui.theme.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import java.util.*
+
+data class TopAppBarUserData(
+    val username: String,
+    val profilePictureUrl: String? = null,
+    val educationLevel: String, // "SD", "SMP", or "SMA"
+    val currentLevel: Int,
+    val currentXp: Int,
+    val xpForNextLevel: Int
+)
+
+@Composable
+fun TopAppBar(
+    userData: TopAppBarUserData,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = DarkGreen,
+    contentColor: Color = PastelYellow,
+    showProfilePicture: Boolean = true,
+    showEducationBadge: Boolean = true,
+    showLevelAndProgress: Boolean = true
+) {
+    val greeting = getGreeting()
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(backgroundColor)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.Top,
+                modifier = Modifier.weight(1f)
+            ) {
+                if (showProfilePicture) {
+                    ProfilePicture(
+                        profilePictureUrl = userData.profilePictureUrl,
+                        modifier = Modifier.size(56.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
+
+                Column {
+                    Text(
+                        text = "$greeting!",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = MediumGreenSage,
+                        fontFamily = JerseyFont
+                    )
+
+                    Text(
+                        text = userData.username,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PastelYellow,
+                        fontFamily = PoppinsFont
+                    )
+
+                    if (showEducationBadge) {
+                        Spacer(Modifier.height(8.dp))
+
+                        EducationLevelBadgeCompact(
+                            educationLevel = userData.educationLevel
+                        )
+                    }
+                }
+            }
+
+            if (showLevelAndProgress) {
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    HexagonLevel(
+                        level = userData.currentLevel,
+                        backgroundColor = PrimaryGreen,
+                        textColor = PastelYellow
+                    )
+
+                    // Quiz progress
+                    QuizProgress(
+                        currentXp = userData.currentXp,
+                        maxXp = userData.xpForNextLevel,
+                        progressColor = PrimaryGreenLight,
+                        backgroundColor = DarkGreenShade
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Profile picture component with circular shape
+ */
+@Composable
+private fun ProfilePicture(
+    profilePictureUrl: String?,
+    modifier: Modifier = Modifier
+) {
+    if (profilePictureUrl != null && profilePictureUrl.isNotBlank()) {
+        AsyncImage(
+            model = profilePictureUrl,
+            contentDescription = "Profile Picture",
+            modifier = modifier
+                .clip(CircleShape)
+                .border(2.dp, PastelYellow, CircleShape),
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        Box(
+            modifier = modifier
+                .clip(CircleShape)
+                .background(MediumGreenSage)
+                .border(2.dp, White, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "👤",
+                fontSize = 28.sp
+            )
+        }
+    }
+}
+
+/**
+ * Compact education level badge
+ */
+@Composable
+private fun EducationLevelBadgeCompact(
+    educationLevel: String,
+    modifier: Modifier = Modifier
+) {
+    val badgeColor = when (educationLevel) {
+        "SD" -> ErrorRed
+        "SMP" -> PrimaryBlue
+        "SMA" -> BlueOcean
+        else -> BlueOcean
+    }
+
+    Row(
+        modifier = modifier
+            .background(badgeColor, CircleShape)
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = "Education Level:",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = PastelYellow,
+            fontFamily = JerseyFont
+        )
+        Text(
+            text = educationLevel,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = PastelYellow,
+            fontFamily = JerseyFont
+        )
+    }
+}
+
+@Composable
+private fun HexagonLevel(
+    level: Int,
+    backgroundColor: Color,
+    textColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(64.dp)
+            .background(PrimaryGreenLight, HexagonShape())
+            .border(6.dp, DarkGreenTeal, HexagonShape()),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = level.toString(),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkGreenMoss,
+                fontFamily = JerseyFont
+            )
+        }
+    }
+}
+
+
+/**
+ * Quiz progress indicator
+ */
+@Composable
+private fun QuizProgress(
+    currentXp: Int,
+    maxXp: Int,
+    progressColor: Color,
+    backgroundColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val progress = if (maxXp > 0) currentXp.toFloat() / maxXp.toFloat() else 0f
+
+    Column(
+        modifier = modifier.width(56.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = "XP",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = PastelYellow.copy(alpha = 0.8f),
+            fontFamily = JerseyFont
+        )
+
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(CircleShape),
+            color = progressColor,
+            trackColor = backgroundColor,
+        )
+
+        Text(
+            text = "$currentXp/$maxXp",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = PastelYellow.copy(alpha = 0.7f),
+            fontFamily = JerseyFont
+        )
+    }
+}
+
+private fun getGreeting(): String {
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 0..11 -> "Good morning"
+        in 12..17 -> "Good afternoon"
+        else -> "Good night"
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TopAppBarPreview() {
+    FaunaDexTheme {
+        TopAppBar(
+            userData = TopAppBarUserData(
+                username = "raf_0411",
+                profilePictureUrl = null,
+                educationLevel = "SMA",
+                currentLevel = 5,
+                currentXp = 450,
+                xpForNextLevel = 1000
+            )
+        )
+    }
+}
