@@ -19,11 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import java.util.*
 
 data class TopAppBarUserData(
@@ -126,52 +128,55 @@ private fun ProfilePicture(
     profilePictureUrl: String?,
     modifier: Modifier = Modifier
 ) {
-    if (profilePictureUrl != null && profilePictureUrl.isNotBlank()) {
-        AsyncImage(
-            model = profilePictureUrl,
-            contentDescription = "Profile Picture",
-            modifier = modifier
-                .clip(CircleShape)
-                .border(2.dp, PastelYellow, CircleShape),
-            contentScale = ContentScale.Crop,
-            error = {
-                // Show default avatar on error
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MediumGreenSage),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "👤",
-                        fontSize = 28.sp
-                    )
-                }
-            },
-            placeholder = {
-                // Show placeholder while loading
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MediumGreenSage),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "👤",
-                        fontSize = 28.sp
-                    )
-                }
+    Box(
+        modifier = modifier
+            .clip(CircleShape)
+            .background(MediumGreenSage)
+            .border(2.dp, White, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        if (profilePictureUrl != null && profilePictureUrl.isNotBlank()) {
+            val imageData = if (profilePictureUrl.startsWith("data:image")) {
+                val base64Data = profilePictureUrl.substringAfter("base64,")
+                android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT)
+            } else {
+                profilePictureUrl
             }
-        )
-    } else {
-        // Default avatar when no URL provided
-        Box(
-            modifier = modifier
-                .clip(CircleShape)
-                .background(MediumGreenSage)
-                .border(2.dp, PastelYellow, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
+
+            SubcomposeAsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(imageData)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Profile Picture",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop,
+                loading = {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "👤",
+                            fontSize = 28.sp
+                        )
+                    }
+                },
+                error = {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "👤",
+                            fontSize = 28.sp
+                        )
+                    }
+                }
+            )
+        } else {
             Text(
                 text = "👤",
                 fontSize = 28.sp
@@ -290,14 +295,14 @@ private fun XpProgress(
         ) {
             Text(
                 text = "XP",
-                fontSize = 8.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Medium,
                 color = PastelYellow.copy(alpha = 0.8f),
                 fontFamily = JerseyFont
             )
             Text(
                 text = "$currentXp/$maxXp",
-                fontSize = 10.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = PastelYellow.copy(alpha = 0.7f),
                 fontFamily = JerseyFont

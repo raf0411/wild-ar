@@ -4,7 +4,6 @@ import android.app.faunadex.ui.theme.DarkGreen
 import android.app.faunadex.ui.theme.FaunaDexTheme
 import android.app.faunadex.ui.theme.JerseyFont
 import android.app.faunadex.ui.theme.MediumGreenDark
-import android.app.faunadex.ui.theme.PrimaryGreen
 import android.app.faunadex.ui.theme.PrimaryGreenLight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -61,15 +60,16 @@ fun FaunaBottomBar(
         color = DarkGreen
     ) {
         NavigationBar(
-            modifier = Modifier.padding(vertical = 8.dp),
+            modifier = Modifier.padding(vertical = 4.dp),
             containerColor = DarkGreen,
-            contentColor = Color.White
+            contentColor = Color.White,
+            tonalElevation = 0.dp
         ) {
             items.forEach { item ->
                 NavigationBarItem(
                     icon = {
                         Icon(
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(24.dp),
                             imageVector = item.icon,
                             contentDescription = item.label
                         )
@@ -78,7 +78,7 @@ fun FaunaBottomBar(
                         Text(
                             text = item.label,
                             fontFamily = JerseyFont,
-                            fontSize = 14.sp
+                            fontSize = 12.sp
                         )
                     },
                     selected = currentRoute == item.route,
