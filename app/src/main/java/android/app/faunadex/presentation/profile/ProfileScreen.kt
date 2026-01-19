@@ -97,9 +97,7 @@ fun ProfileScreenContent(
                         )
                     )
                 }
-                else -> {
-                    // Show nothing or a loading state for top bar
-                }
+                else -> {}
             }
         },
         bottomBar = {
