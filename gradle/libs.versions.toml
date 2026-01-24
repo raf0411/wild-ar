@@ -1,8 +1,13 @@
 [versions]
 accompanistPermissions = "0.37.3"
+accompanistPermissionsVersion = "0.36.0"
 agp = "8.13.1"
 arsceneview = "2.3.3"
+arsceneviewVersion = "0.10.0"
+coilCompose = "2.7.0"
 core = "1.52.0"
+coreSplashscreen = "1.2.0"
+coreVersion = "1.44.0"
 kotlin = "2.0.21"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -14,6 +19,7 @@ composeBom = "2024.09.00"
 hilt = "2.51"
 hiltNavigationCompose = "1.2.0"
 firebaseBom = "33.7.0"
+media3Ui = "1.9.0"
 navigationCompose = "2.8.5"
 lifecycleViewmodelCompose = "2.8.7"
 kotlinxCoroutines = "1.8.1"
@@ -24,9 +30,16 @@ mapsCompose = "4.3.3"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
+accompanist-permissions-v0360 = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissionsVersion" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
+androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3Ui" }
+androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3Ui" }
 arsceneview = { module = "io.github.sceneview:arsceneview", version.ref = "arsceneview" }
+arsceneview-v0100 = { module = "io.github.sceneview:arsceneview", version.ref = "arsceneviewVersion" }
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 core = { module = "com.google.ar:core", version.ref = "core" }
+core-v1440 = { module = "com.google.ar:core", version.ref = "coreVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

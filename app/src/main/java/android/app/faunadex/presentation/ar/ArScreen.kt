@@ -3,8 +3,11 @@ package android.app.faunadex.presentation.ar
 import android.Manifest
 import android.app.faunadex.ui.theme.DarkGreen
 import android.app.faunadex.ui.theme.FaunaDexTheme
+import android.app.faunadex.ui.theme.JerseyFont
+import android.app.faunadex.ui.theme.MediumGreenSage
 import android.app.faunadex.ui.theme.PastelYellow
 import android.app.faunadex.ui.theme.PrimaryGreen
+import android.app.faunadex.ui.theme.PrimaryGreenLight
 import android.app.faunadex.ui.theme.PrimaryGreenLime
 import android.app.faunadex.ui.theme.White
 import androidx.compose.animation.AnimatedVisibility
@@ -23,16 +26,20 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CenterFocusWeak
 import androidx.compose.material.icons.filled.CheckCircle
@@ -40,6 +47,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -253,8 +262,9 @@ fun ArCameraContent(
                     CircularProgressIndicator(color = PrimaryGreenLime, strokeWidth = 4.dp)
                     Text(
                         text = "Loading 3D Model...",
-                        color = White,
-                        fontSize = 16.sp,
+                        color = PastelYellow,
+                        fontSize = 18.sp,
+                        fontFamily = JerseyFont,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -287,6 +297,19 @@ fun BoxScope.ArCameraOverlay(
     onNavigateBack: () -> Unit,
     onClearAnimals: () -> Unit
 ) {
+    val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
+    val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues()
+
+    var showSuccessMessage by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isModelPlaced) {
+        if (isModelPlaced) {
+            showSuccessMessage = true
+            kotlinx.coroutines.delay(3000L)
+            showSuccessMessage = false
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -299,6 +322,7 @@ fun BoxScope.ArCameraOverlay(
                     )
                 )
             )
+            .padding(top = statusBarPadding.calculateTopPadding())
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -310,9 +334,11 @@ fun BoxScope.ArCameraOverlay(
                 .background(Color.Black.copy(alpha = 0.5f), CircleShape)
         ) {
             Icon(
-                imageVector = Icons.Default.ArrowBack,
+                modifier = Modifier
+                    .size(48.dp),
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = "Back",
-                tint = White
+                tint = PrimaryGreenLight
             )
         }
 
@@ -342,85 +368,165 @@ fun BoxScope.ArCameraOverlay(
     }
 
     if (!isModelPlaced) {
-        Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Surface(
-                color = Color.Black.copy(alpha = 0.7f),
-                shape = RoundedCornerShape(16.dp)
+        if (planeCount == 0) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = statusBarPadding.calculateTopPadding() + 70.dp)
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Surface(
+                    color = Color.Black.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    sessionState.selectedAnimal?.let { animal ->
-                        Text(
-                            text = "Ready to place: ${animal.name}",
-                            color = PrimaryGreenLime,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Warning,
+                            contentDescription = null,
+                            tint = Color.Red,
+                            modifier = Modifier.size(48.dp)
                         )
                     }
+                }
 
-                    Text(
-                        text = if (planeCount == 0)
-                            "Point camera at a flat surface"
-                        else
-                            "Tap to place the 3D model",
-                        color = White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = if (planeCount == 0)
-                            "Move device slowly to detect surfaces"
-                        else
-                            "Surface detected! Tap anywhere to place",
-                        color = White.copy(alpha = 0.7f),
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center
-                    )
+                Spacer(Modifier.height(8.dp))
+
+                Surface(
+                    color = Color.Black.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(64.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+
+                        Text(
+                            text = "Move camera to detect a plane surface",
+                            color = Color.Red,
+                            fontSize = 18.sp,
+                            textAlign = TextAlign.Center,
+                            fontFamily = JerseyFont
+                        )
+                    }
                 }
             }
-        }
+        } else {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Surface(
+                    color = Color.Black.copy(alpha = 0.7f),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        sessionState.selectedAnimal?.let { animal ->
+                            Text(
+                                text = "Ready to place: ${animal.name}",
+                                color = PrimaryGreenLime,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
 
-        if (planeCount > 0) {
+                        Text(
+                            text = "Tap to place the 3D model",
+                            color = White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Surface detected! Tap anywhere to place",
+                            color = White.copy(alpha = 0.7f),
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+
             ArReticle()
         }
     }
 
     if (isModelPlaced) {
+        val animal = sessionState.selectedAnimal
+        val animalName = animal?.name ?: "3D Model"
+        val scientificName = animal?.scientificName ?: "Demo Model"
+
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 80.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(top = statusBarPadding.calculateTopPadding() + 70.dp)
+                .padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Surface(
-                color = PrimaryGreen.copy(alpha = 0.95f),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            AnimatedVisibility(visible = showSuccessMessage) {
+                Surface(
+                    color = PrimaryGreen.copy(alpha = 0.95f),
+                    shape = RoundedCornerShape(64.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = White,
-                        modifier = Modifier.size(24.dp)
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = "Animal Placed!",
+                            color = White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Surface(
+                color = Color.Black.copy(alpha = 0.8f),
+                shape = RoundedCornerShape(64.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = animalName,
+                        color = PastelYellow,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = JerseyFont,
+                        textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "3D Model Placed!",
-                        color = White,
+                        text = scientificName,
+                        color = MediumGreenSage,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        fontFamily = JerseyFont,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -439,6 +545,7 @@ fun BoxScope.ArCameraOverlay(
                     )
                 )
             )
+            .padding(bottom = navigationBarPadding.calculateBottomPadding())
             .padding(24.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
@@ -451,9 +558,9 @@ fun BoxScope.ArCameraOverlay(
                     .background(Color.Red.copy(alpha = 0.8f), CircleShape)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Delete,
+                    imageVector = Icons.Default.Replay,
                     contentDescription = "Clear Model",
-                    tint = White,
+                    tint = PastelYellow,
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -461,7 +568,7 @@ fun BoxScope.ArCameraOverlay(
 
         Surface(
             color = PrimaryGreen.copy(alpha = 0.9f),
-            shape = RoundedCornerShape(20.dp)
+            shape = RoundedCornerShape(64.dp)
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -471,14 +578,15 @@ fun BoxScope.ArCameraOverlay(
                 Icon(
                     imageVector = Icons.Default.Pets,
                     contentDescription = null,
-                    tint = White,
+                    tint = PastelYellow,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
                     text = if (isModelPlaced) "Model Active" else "Tap to Place",
-                    color = White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    color = PastelYellow,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = JerseyFont
                 )
             }
         }
@@ -564,6 +672,8 @@ fun BoxScope.ArTopBar(
     onNavigateBack: () -> Unit,
     planesDetected: Int
 ) {
+    val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -576,6 +686,7 @@ fun BoxScope.ArTopBar(
                     )
                 )
             )
+            .padding(top = statusBarPadding.calculateTopPadding())
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -587,9 +698,11 @@ fun BoxScope.ArTopBar(
                 .background(Color.Black.copy(alpha = 0.5f), CircleShape)
         ) {
             Icon(
-                imageVector = Icons.Default.ArrowBack,
+                modifier = Modifier
+                    .size(48.dp),
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = "Back",
-                tint = White
+                tint = PrimaryGreenLight
             )
         }
 
@@ -837,6 +950,8 @@ fun BoxScope.ArBottomControls(
     onClearAnimals: () -> Unit,
     onCapture: () -> Unit
 ) {
+    val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues()
+
     Row(
         modifier = Modifier
             .align(Alignment.BottomCenter)
@@ -849,6 +964,7 @@ fun BoxScope.ArBottomControls(
                     )
                 )
             )
+            .padding(bottom = navigationBarPadding.calculateBottomPadding())
             .padding(24.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically

@@ -67,7 +67,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
 
     // Splash Screen
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation(libs.androidx.core.splashscreen)
 
     // Hilt
     implementation(libs.hilt.android)
@@ -91,24 +91,24 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
 
     // Coil for image loading
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation(libs.coil.compose)
 
     // Media3 ExoPlayer for audio playback
-    implementation("androidx.media3:media3-exoplayer:1.2.1")
-    implementation("androidx.media3:media3-ui:1.2.1")
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
 
     // Google Maps
     implementation(libs.play.services.maps)
     implementation(libs.maps.compose)
 
     // ARCore for AR functionality
-    implementation("com.google.ar:core:1.44.0")
+    implementation(libs.core.v1440)
 
     // SceneView for AR rendering
-    implementation("io.github.sceneview:arsceneview:0.10.0")
+    implementation(libs.arsceneview.v0100)
 
     // Accompanist for permissions
-    implementation("com.google.accompanist:accompanist-permissions:0.36.0")
+    implementation(libs.accompanist.permissions.v0360)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
