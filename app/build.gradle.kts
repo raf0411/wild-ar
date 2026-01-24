@@ -101,6 +101,13 @@ dependencies {
     implementation(libs.play.services.maps)
     implementation(libs.maps.compose)
 
+    // ARCore for AR functionality
+    implementation("com.google.ar:core:1.42.0")
+    implementation("com.google.ar.sceneform:core:1.17.1")
+
+    // Accompanist for permissions
+    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -99,6 +99,7 @@ import com.google.maps.android.compose.MapUiSettings
 @Composable
 fun AnimalDetailScreen(
     onNavigateBack: () -> Unit = {},
+    onNavigateToAr: () -> Unit = {},
     viewModel: AnimalDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -148,6 +149,7 @@ fun AnimalDetailScreen(
                     onPlayPauseClick = { viewModel.togglePlayPause() },
                     onStopAudioClick = { viewModel.stopAudio() },
                     onSeekTo = { position -> viewModel.seekTo(position) },
+                    onNavigateToAr = onNavigateToAr,
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -182,6 +184,7 @@ fun AnimalDetailContent(
     onPlayPauseClick: () -> Unit,
     onStopAudioClick: () -> Unit,
     onSeekTo: (Long) -> Unit = {},
+    onNavigateToAr: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableStateOf(AnimalDetailTab.INFO) }
@@ -226,7 +229,7 @@ fun AnimalDetailContent(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             IconButton(
-                onClick = { /* TODO: Launch AR view */ },
+                onClick = onNavigateToAr,
                 icon = Icons.Outlined.ViewInAr,
                 size = 48.dp,
                 cornerRadius = 8.dp
@@ -831,7 +834,6 @@ fun HabitatMapPlaceholder(
     longitude: Double,
     modifier: Modifier = Modifier
 ) {
-    // Only show map if we have valid coordinates
     if (latitude != 0.0 && longitude != 0.0) {
         val animalLocation = LatLng(latitude, longitude)
         val cameraPositionState = rememberCameraPositionState {
@@ -871,7 +873,6 @@ fun HabitatMapPlaceholder(
             }
         }
     } else {
-        // Fallback to placeholder if no coordinates
         Box(
             modifier = modifier
                 .height(250.dp)

@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import android.app.faunadex.presentation.animalDetail.AnimalDetailScreen
+import android.app.faunadex.presentation.ar.ArScreen
 import android.app.faunadex.presentation.auth.login.LoginScreen
 import android.app.faunadex.presentation.auth.onboarding.OnboardingScreen
 import android.app.faunadex.presentation.auth.register.RegisterScreen
@@ -99,6 +100,9 @@ fun NavGraph(
             AnimalDetailScreen(
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToAr = {
+                    navController.navigate(Screen.AR.route)
                 }
             )
         }
@@ -137,6 +141,14 @@ fun NavGraph(
 
         composable(Screen.ChangePassword.route) {
             ChangePasswordScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.AR.route) {
+            ArScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
