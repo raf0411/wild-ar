@@ -40,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.foundation.layout.statusBarsPadding
 
 @Composable
 fun LoginScreen(
@@ -81,6 +82,7 @@ internal fun LoginContent(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .statusBarsPadding()
             ) {
                 LayeredHeader(
                     text = stringResource(R.string.login),
@@ -122,7 +124,7 @@ internal fun LoginContent(
                     label = stringResource(R.string.email),
                     keyboardType = KeyboardType.Email,
                     enabled = !uiState.isLoading,
-                    isError = uiState.errorMessage != null
+                    isError = uiState.errorMessage != null || uiState.errorMessageResId != null
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -145,13 +147,23 @@ internal fun LoginContent(
                     keyboardType = KeyboardType.Password,
                     isPassword = true,
                     enabled = !uiState.isLoading,
-                    isError = uiState.errorMessage != null
+                    isError = uiState.errorMessage != null || uiState.errorMessageResId != null
                 )
 
                 if (uiState.errorMessage != null) {
                     Spacer(modifier = Modifier.height(32.dp))
                     Text(
                         text = uiState.errorMessage,
+                        fontFamily = JerseyFont,
+                        fontSize = 18.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                } else if (uiState.errorMessageResId != null) {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Text(
+                        text = stringResource(uiState.errorMessageResId),
                         fontFamily = JerseyFont,
                         fontSize = 18.sp,
                         textAlign = TextAlign.Center,

@@ -253,8 +253,6 @@ private fun ProfileContent(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-
         Text(
             text = stringResource(R.string.profile),
             fontFamily = PoppinsFont,

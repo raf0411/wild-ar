@@ -31,6 +31,13 @@
     <string name="your_education_level">Your Education Level</string>
     <string name="already_have_account">Already have an account? Login</string>
 
+    <!-- Auth Error Messages -->
+    <string name="error_all_fields_required">All fields are required</string>
+    <string name="error_passwords_do_not_match">Passwords do not match</string>
+    <string name="error_email_password_empty">Email and password cannot be empty</string>
+    <string name="error_password_too_short">Password must be at least 6 characters</string>
+    <string name="error_invalid_email">Invalid email format</string>
+
     <!-- Dashboard Screen -->
     <string name="search_your_fauna">Search your Fauna…</string>
     <string name="add_sample_animals">🌱 Add Sample Animals to Firebase</string>

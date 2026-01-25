@@ -14,7 +14,7 @@
     <string name="warning">Peringatan</string>
 
     <!-- Onboarding Screen -->
-    <string name="welcome_to">Selamat Datang di</string>
+    <string name="welcome_to">Welcome</string>
     <string name="login">Masuk</string>
     <string name="register">Daftar</string>
     <string name="wildar_logo">Logo WildAR</string>
@@ -30,6 +30,13 @@
     <string name="confirm_password">Konfirmasi Kata Sandi</string>
     <string name="your_education_level">Tingkat Pendidikanmu</string>
     <string name="already_have_account">Sudah punya akun? Masuk</string>
+
+    <!-- Auth Error Messages -->
+    <string name="error_all_fields_required">Semua kolom wajib diisi</string>
+    <string name="error_passwords_do_not_match">Kata sandi tidak cocok</string>
+    <string name="error_email_password_empty">Email dan kata sandi tidak boleh kosong</string>
+    <string name="error_password_too_short">Kata sandi harus minimal 6 karakter</string>
+    <string name="error_invalid_email">Format email tidak valid</string>
 
     <!-- Dashboard Screen -->
     <string name="search_your_fauna">Cari Fauna kamu…</string>
