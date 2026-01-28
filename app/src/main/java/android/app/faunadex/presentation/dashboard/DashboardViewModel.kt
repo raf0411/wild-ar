@@ -8,9 +8,7 @@ import android.app.faunadex.domain.usecase.GetFavoriteAnimalIdsUseCase
 import android.app.faunadex.domain.model.User
 import android.app.faunadex.domain.model.Animal
 import android.app.faunadex.domain.repository.AnimalRepository
-import android.app.faunadex.utils.FirebaseDataSeeder
 import android.util.Log
-import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -94,36 +92,10 @@ class DashboardViewModel @Inject constructor(
             }
             _uiState.value = _uiState.value.copy(favoriteAnimalIds = newFavorites)
 
-            // Call backend
             val result = toggleFavoriteAnimalUseCase(user.uid, animalId, isFavorite)
             result.onFailure { exception ->
-                // Revert on failure
                 _uiState.value = _uiState.value.copy(favoriteAnimalIds = currentFavorites)
                 Log.e("DashboardViewModel", "Failed to toggle favorite", exception)
-            }
-        }
-    }
-
-    /**
-     * Seed sample animals to Firebase Firestore
-     * Call this function ONCE to populate your database with sample data
-     * After seeding, you can remove or comment out the call
-     */
-    fun seedSampleData() {
-        viewModelScope.launch {
-            try {
-                Log.d("DashboardViewModel", "🌱 Starting to seed sample animals...")
-                val firestore = FirebaseFirestore.getInstance()
-                FirebaseDataSeeder.seedAnimals(firestore)
-                Log.d("DashboardViewModel", "✅ Seeding completed! Reloading animals...")
-
-                // Reload animals after seeding
-                loadAnimals()
-            } catch (e: Exception) {
-                Log.e("DashboardViewModel", "❌ Error seeding data: ${e.message}", e)
-                _uiState.value = _uiState.value.copy(
-                    error = "Failed to seed data: ${e.message}"
-                )
             }
         }
     }

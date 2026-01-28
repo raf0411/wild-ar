@@ -31,8 +31,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -40,6 +38,8 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -83,6 +83,7 @@ fun DashboardScreen(
     )
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreenContent(
     uiState: DashboardUiState,
@@ -101,9 +102,11 @@ fun DashboardScreenContent(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
+    var isRefreshing by remember { mutableStateOf(false) }
+    val pullToRefreshState = rememberPullToRefreshState()
+
     var showFilterSheet by remember { mutableStateOf(false) }
 
-    // Applied filters (used for actual filtering)
     val filterMyFavorites = stringResource(R.string.filter_my_favorites)
     val filterMammals = stringResource(R.string.filter_mammals)
     val filterBirds = stringResource(R.string.filter_birds)
@@ -208,21 +211,6 @@ fun DashboardScreenContent(
 
             Spacer(Modifier.height(32.dp))
 
-            if (uiState.animals.isEmpty() && !uiState.isLoading) {
-                Button (
-                    onClick = {
-                        viewModel?.seedSampleData()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimaryGreen,
-                        contentColor = PastelYellow
-                    )
-                ) {
-                    Text(stringResource(R.string.add_sample_animals))
-                }
-                Spacer(Modifier.height(16.dp))
-            }
 
             val animals = uiState.animals
 
@@ -317,57 +305,72 @@ fun DashboardScreenContent(
                     }
             }
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    isRefreshing = true
+                    viewModel?.loadAnimals()
+                    // Reset loading state after a short delay
+                    coroutineScope.launch {
+                        kotlinx.coroutines.delay(1000)
+                        isRefreshing = false
+                    }
+                },
+                state = pullToRefreshState,
+                modifier = Modifier.fillMaxSize()
             ) {
-                items(displayedFaunaList.size) { index ->
-                    val animal = displayedFaunaList[index]
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(displayedFaunaList.size) { index ->
+                        val animal = displayedFaunaList[index]
 
-                    FaunaCard(
-                        faunaName = animal.name,
-                        latinName = animal.scientificName,
-                        imageUrl = animal.imageUrl,
-                        isFavorite = uiState.favoriteAnimalIds.contains(animal.id),
-                        onFavoriteClick = {
-                            viewModel?.toggleFavorite(animal.id)
-                        },
-                        onCardClick = {
-                            onNavigateToAnimalDetail(animal.id)
-                        }
-                    )
-                }
+                        FaunaCard(
+                            faunaName = animal.name,
+                            latinName = animal.scientificName,
+                            imageUrl = animal.imageUrl,
+                            isFavorite = uiState.favoriteAnimalIds.contains(animal.id),
+                            onFavoriteClick = {
+                                viewModel?.toggleFavorite(animal.id)
+                            },
+                            onCardClick = {
+                                onNavigateToAnimalDetail(animal.id)
+                            }
+                        )
+                    }
 
-                if (isLoadingMore && hasMoreItems) {
-                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            LoadingSpinner(size = 32.dp, strokeWidth = 3.dp)
+                    if (isLoadingMore && hasMoreItems) {
+                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                LoadingSpinner(size = 32.dp, strokeWidth = 3.dp)
+                            }
                         }
                     }
-                }
 
-                if (!hasMoreItems && displayedFaunaList.isNotEmpty()) {
-                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.no_more_fauna),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = PrimaryGreen
-                            )
+                    if (!hasMoreItems && displayedFaunaList.isNotEmpty()) {
+                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.no_more_fauna),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = PrimaryGreen
+                                )
+                            }
                         }
                     }
                 }

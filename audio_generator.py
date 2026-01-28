@@ -1,20 +1,26 @@
 import os
 import json
-import requests
 import shutil
 from pathlib import Path
 import firebase_admin
 from firebase_admin import credentials, firestore
-from supabase import create_client, Client
+import requests
+from gtts import gTTS
+from dotenv import load_dotenv
 
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+# Load environment variables from .env file
+load_dotenv()
+
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip('/') + '/'
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "faunadex-audio")
+SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "wildar-audio")
 
-VOICE_ID_SD = "EXAVITQu4vr4xnSDxMaL"
-VOICE_ID_SMP = "21m00Tcm4TlvDq8ikWAM"
-VOICE_ID_SMA = "21m00Tcm4TlvDq8ikWAM"
+# TTS Configuration - Support multiple languages
+TTS_LANGUAGES = {
+    'en': 'en',  # English
+    'id': 'id'   # Indonesian
+}
+TTS_SLOW = False  # Set to True for slower speech
 
 SERVICE_ACCOUNT_KEY = "serviceAccountKey.json"
 
@@ -25,123 +31,119 @@ def init_firebase():
         firebase_admin.initialize_app(cred)
     return firestore.client()
 
-def init_supabase_client():
-    """Initialize Supabase client"""
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def generate_audio_elevenlabs(text, voice_id, output_path):
-    """Generate audio using 11Labs API"""
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-
-    headers = {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": ELEVENLABS_API_KEY
-    }
-
-    data = {
-        "text": text,
-        "model_id": "eleven_multilingual_v2",
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.75,
-            "style": 0.0,
-            "use_speaker_boost": True
-        }
-    }
-
-    response = requests.post(url, json=data, headers=headers)
-
-    if response.status_code == 200:
-        with open(output_path, 'wb') as f:
-            f.write(response.content)
-        print(f"✓ Audio generated: {output_path}")
+def generate_audio_gtts(text, output_path, language='en'):
+    """Generate audio using Google Text-to-Speech (gTTS)"""
+    try:
+        tts = gTTS(text=text, lang=language, slow=TTS_SLOW)
+        tts.save(output_path)
+        print(f"✓ Audio generated ({language}): {output_path}")
         return True
-    else:
-        print(f"✗ Failed to generate audio: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"✗ Failed to generate audio ({language}): {e}")
         return False
 
 def upload_to_supabase(local_path, storage_path):
-    """Upload file to Supabase Storage"""
-    supabase = init_supabase_client()
-
+    """Upload file to Supabase Storage using REST API"""
     try:
         with open(local_path, 'rb') as f:
             file_content = f.read()
 
-        response = supabase.storage.from_(SUPABASE_BUCKET).upload(
-            storage_path,
-            file_content,
-            file_options={"content-type": "audio/mpeg"}
-        )
+        # Upload to Supabase Storage using REST API
+        upload_url = f"{SUPABASE_URL}storage/v1/object/{SUPABASE_BUCKET}/{storage_path}"
 
-        public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(storage_path)
-        print(f"✓ Uploaded to Supabase: {public_url}")
-        return public_url
+        headers = {
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "audio/mpeg",
+        }
+
+        response = requests.post(upload_url, data=file_content, headers=headers)
+
+        if response.status_code in [200, 201]:
+            # Get public URL
+            public_url = f"{SUPABASE_URL}storage/v1/object/public/{SUPABASE_BUCKET}/{storage_path}"
+            print(f"✓ Uploaded to Supabase: {public_url}")
+            return public_url
+        else:
+            print(f"✗ Failed to upload to Supabase: {response.status_code} - {response.text}")
+            return None
+
     except Exception as e:
         print(f"✗ Failed to upload to Supabase: {e}")
         return None
 
-def update_firestore_audio_url(animal_id, audio_description_url, audio_fun_fact_url=None):
-    """Update animal document in Firestore with audio URLs"""
+def update_firestore_audio_url(animal_id, audio_urls):
+    """Update animal document in Firestore with audio URLs
+
+    Args:
+        animal_id: The document ID
+        audio_urls: Dictionary with keys like '     ', 'audio_url_id', etc.
+    """
     db = init_firebase()
     animal_ref = db.collection('animals').document(animal_id)
 
-    update_data = {
-        'audio_description_url': audio_description_url
-    }
-
-    if audio_fun_fact_url:
-        update_data['audio_fun_fact_url'] = audio_fun_fact_url
-
-    animal_ref.update(update_data)
+    animal_ref.update(audio_urls)
     print(f"✓ Updated Firestore for animal: {animal_id}")
+    print(f"  Fields updated: {', '.join(audio_urls.keys())}")
 
 def process_animal(animal_data, temp_dir):
-    """Process a single animal: generate audio and upload"""
+    """Process a single animal: generate audio for both languages and upload"""
     animal_id = animal_data['id']
     animal_name = animal_data.get('name', 'Unknown')
-    description = animal_data.get('description', '')
-    fun_fact = animal_data.get('fun_fact', '')
+
+    # Get descriptions in both languages
+    description_en = animal_data.get('long_description_en', '')
+    description_id = animal_data.get('long_description_id', '')
 
     print(f"\n{'='*60}")
     print(f"Processing: {animal_name} (ID: {animal_id})")
     print(f"{'='*60}")
 
-    if not description:
-        print("✗ No description found, skipping...")
+    if not description_en and not description_id:
+        print("✗ No descriptions found in any language, skipping...")
         return False
 
-    voice_id = VOICE_ID_SMP
+    audio_urls = {}
 
-    desc_filename = f"{animal_id}_description.mp3"
-    desc_local_path = temp_dir / desc_filename
+    # Process English description
+    if description_en:
+        print(f"Generating English description audio...")
+        desc_filename_en = f"{animal_id}_description_en.mp3"
+        desc_local_path_en = temp_dir / desc_filename_en
 
-    print(f"Generating description audio...")
-    if generate_audio_elevenlabs(description, voice_id, desc_local_path):
-        desc_storage_path = f"audio/descriptions/{desc_filename}"
-        desc_url = upload_to_supabase(desc_local_path, desc_storage_path)
+        if generate_audio_gtts(description_en, desc_local_path_en, language='en'):
+            desc_storage_path_en = f"audio/descriptions/{desc_filename_en}"
+            desc_url_en = upload_to_supabase(desc_local_path_en, desc_storage_path_en)
+            if desc_url_en:
+                audio_urls['audio_url_en'] = desc_url_en
+    else:
+        print("⚠ No English description found, skipping...")
 
-        funfact_url = None
-        if fun_fact:
-            print(f"Generating fun fact audio...")
-            funfact_filename = f"{animal_id}_funfact.mp3"
-            funfact_local_path = temp_dir / funfact_filename
+    # Process Indonesian description
+    if description_id:
+        print(f"Generating Indonesian description audio...")
+        desc_filename_id = f"{animal_id}_description_id.mp3"
+        desc_local_path_id = temp_dir / desc_filename_id
 
-            if generate_audio_elevenlabs(fun_fact, voice_id, funfact_local_path):
-                funfact_storage_path = f"audio/funfacts/{funfact_filename}"
-                funfact_url = upload_to_supabase(funfact_local_path, funfact_storage_path)
+        if generate_audio_gtts(description_id, desc_local_path_id, language='id'):
+            desc_storage_path_id = f"audio/descriptions/{desc_filename_id}"
+            desc_url_id = upload_to_supabase(desc_local_path_id, desc_storage_path_id)
+            if desc_url_id:
+                audio_urls['audio_url_id'] = desc_url_id
+    else:
+        print("⚠ No Indonesian description found, skipping...")
 
-        if desc_url:
-            update_firestore_audio_url(animal_id, desc_url, funfact_url)
-            return True
+    # Update Firestore if we generated any audio
+    if audio_urls:
+        update_firestore_audio_url(animal_id, audio_urls)
+        return True
 
+    print("✗ No audio generated for this animal")
     return False
 
 def main():
     """Main function to process all animals"""
     required_vars = [
-        "ELEVENLABS_API_KEY",
         "SUPABASE_URL",
         "SUPABASE_KEY",
         "SUPABASE_BUCKET"
