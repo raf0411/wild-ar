@@ -230,7 +230,7 @@ private fun QuizCardItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(110.dp),
+            .height(120.dp),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
@@ -304,13 +304,14 @@ private fun QuizCardItem(
                         PastelYellow.copy(alpha = 0.6f)
                     else
                         PastelYellow,
-                    fontSize = 20.sp,
+                    fontSize = if (title.length > 30) 16.sp else 20.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = JerseyFont,
-                    maxLines = 1
+                    maxLines = 2,
+                    lineHeight = if (title.length > 30) 18.sp else 22.sp
                 )
 
-                Spacer(modifier = Modifier.height(0.5.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
                     text = subtitle,
@@ -318,7 +319,7 @@ private fun QuizCardItem(
                         PrimaryGreen.copy(alpha = 0.5f)
                     else
                         PrimaryGreen,
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Normal,
                     maxLines = 1,
                     fontFamily = JerseyFont
@@ -332,7 +333,7 @@ private fun QuizCardItem(
                         MediumGreenSage.copy(alpha = 0.4f)
                     else
                         MediumGreenSage,
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Normal,
                     fontFamily = JerseyFont
                 )

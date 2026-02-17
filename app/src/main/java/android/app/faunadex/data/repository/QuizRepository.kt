@@ -196,6 +196,12 @@ class QuizRepositoryImpl @Inject constructor(
             android.util.Log.d("QuizRepository", "  - isCompleted: ${attempt.isCompleted}")
             android.util.Log.d("QuizRepository", "  - score: ${attempt.score}")
 
+            // Validate attemptId is not empty
+            if (attempt.id.isBlank()) {
+                android.util.Log.e("QuizRepository", "Error: attemptId is empty or blank")
+                return Result.failure(Exception("Invalid quiz attempt: missing attempt ID"))
+            }
+
             val completedAttempt = attempt.copy(
                 isCompleted = true,
                 completedAt = Date()

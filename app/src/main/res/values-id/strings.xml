@@ -156,6 +156,7 @@
     <string name="error_user_not_logged_in">Pengguna belum masuk</string>
     <string name="error_failed_load_questions">Gagal memuat pertanyaan</string>
     <string name="error_failed_submit_quiz">Gagal mengirim kuis</string>
+    <string name="error_failed_start_quiz">Gagal memulai kuis</string>
     <string name="error_failed_load_quiz_details">Gagal memuat detail kuis</string>
     <string name="error_question_not_found">Pertanyaan tidak ditemukan</string>
 

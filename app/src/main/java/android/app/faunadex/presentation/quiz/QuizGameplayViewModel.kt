@@ -111,20 +111,30 @@ class QuizGameplayViewModel @Inject constructor(
                     val user = getCurrentUserUseCase()
                     if (user != null) {
                         val attemptResult = quizRepository.startQuizAttempt(user.uid, quizId)
-                        val attempt = attemptResult.getOrNull()
 
-                        val shuffledQuestions = shuffleQuestions(questions)
+                        attemptResult.fold(
+                            onSuccess = { attempt ->
+                                val shuffledQuestions = shuffleQuestions(questions)
 
-                        _uiState.value = _uiState.value.copy(
-                            quiz = quiz,
-                            questions = shuffledQuestions,
-                            attemptId = attempt?.id ?: "",
-                            timeRemaining = quiz.timeLimitSeconds,
-                            isLoading = false,
-                            countdown = 3
+                                _uiState.value = _uiState.value.copy(
+                                    quiz = quiz,
+                                    questions = shuffledQuestions,
+                                    attemptId = attempt.id,
+                                    timeRemaining = quiz.timeLimitSeconds,
+                                    isLoading = false,
+                                    countdown = 3
+                                )
+
+                                startCountdown()
+                            },
+                            onFailure = { exception ->
+                                android.util.Log.e("QuizGameplay", "Error starting quiz attempt: ${exception.message}")
+                                _uiState.value = _uiState.value.copy(
+                                    error = exception.message ?: context.getString(R.string.error_failed_start_quiz),
+                                    isLoading = false
+                                )
+                            }
                         )
-
-                        startCountdown()
                     } else {
                         _uiState.value = _uiState.value.copy(
                             error = context.getString(R.string.error_user_not_logged_in),
