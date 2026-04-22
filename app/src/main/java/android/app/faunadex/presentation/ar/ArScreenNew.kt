@@ -42,13 +42,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import android.app.faunadex.utils.ModelCache
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.ar.core.ArCoreApk
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
+import com.google.ar.core.HitResult
 import com.google.ar.core.Plane
 import com.google.ar.core.TrackingState
+import com.google.ar.core.exceptions.UnavailableApkTooOldException
+import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
+import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException
+import com.google.ar.core.exceptions.UnavailableException
+import com.google.ar.core.exceptions.UnavailableSdkTooOldException
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.node.AnchorNode
@@ -56,17 +64,24 @@ import io.github.sceneview.node.ModelNode
 import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberModelLoader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.net.URL
-import java.security.MessageDigest
 
 private const val TAG = "ArScreenNew"
 
 private const val MODEL_SCALE = 1f
+
+private sealed interface ArRuntimeState {
+    data object Checking : ArRuntimeState
+    data object Ready : ArRuntimeState
+    data class Unsupported(
+        val message: String,
+        val canRetry: Boolean = true
+    ) : ArRuntimeState
+}
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -75,7 +90,10 @@ fun ArScreenNew(
     animalId: String? = null,
     viewModel: ArViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+    var arRuntimeState by remember { mutableStateOf<ArRuntimeState>(ArRuntimeState.Checking) }
+    var runtimeCheckNonce by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
         if (!cameraPermissionState.status.isGranted) {
@@ -94,11 +112,55 @@ fun ArScreenNew(
         Log.d(TAG, "Selected animal updated: ${sessionState.selectedAnimal?.name}, URL: ${sessionState.selectedAnimal?.arModelUrl}")
     }
 
+    LaunchedEffect(cameraPermissionState.status.isGranted, runtimeCheckNonce) {
+        if (!cameraPermissionState.status.isGranted) {
+            arRuntimeState = ArRuntimeState.Checking
+            return@LaunchedEffect
+        }
+        arRuntimeState = ArRuntimeState.Checking
+        arRuntimeState = checkArRuntimeState(context)
+    }
+
     if (cameraPermissionState.status.isGranted) {
-        ArContent(
-            sessionState = sessionState,
-            onNavigateBack = onNavigateBack
-        )
+        when (val state = arRuntimeState) {
+            ArRuntimeState.Checking -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(color = PrimaryGreenLime)
+                        Text(
+                            text = stringResource(R.string.ar_initializing),
+                            color = White,
+                            fontSize = 16.sp,
+                            fontFamily = JerseyFont
+                        )
+                    }
+                }
+            }
+
+            ArRuntimeState.Ready -> {
+                ArContent(
+                    sessionState = sessionState,
+                    onNavigateBack = onNavigateBack
+                )
+            }
+
+            is ArRuntimeState.Unsupported -> {
+                ArRuntimeErrorContent(
+                    message = state.message,
+                    canRetry = state.canRetry,
+                    onRetry = { runtimeCheckNonce++ },
+                    onNavigateBack = onNavigateBack
+                )
+            }
+        }
     } else {
         Box(
             modifier = Modifier.fillMaxSize().background(Color.Black),
@@ -109,6 +171,49 @@ fun ArScreenNew(
                 color = White,
                 fontSize = 18.sp
             )
+        }
+    }
+}
+
+@Composable
+private fun ArRuntimeErrorContent(
+    message: String,
+    canRetry: Boolean,
+    onRetry: () -> Unit,
+    onNavigateBack: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.error),
+                color = White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = message,
+                color = White.copy(alpha = 0.85f),
+                textAlign = TextAlign.Center
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (canRetry) {
+                    Button(onClick = onRetry) {
+                        Text(text = stringResource(R.string.retry))
+                    }
+                }
+                OutlinedButton(onClick = onNavigateBack) {
+                    Text(text = stringResource(R.string.ar_go_back))
+                }
+            }
         }
     }
 }
@@ -152,9 +257,27 @@ private fun ArContent(
 
     var hasPlane by remember { mutableStateOf(false) }
     var currentFrame by remember { mutableStateOf<Frame?>(null) }
+    var placementJob by remember { mutableStateOf<Job?>(null) }
 
     var cachedModelPath by remember { mutableStateOf<String?>(null) }
     var isPreloading by remember { mutableStateOf(false) }
+
+    LaunchedEffect(modelUrl) {
+        cachedModelPath = null
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            placementJob?.cancel()
+            childNodes.forEach { node ->
+                try {
+                    node.anchor.detach()
+                    node.destroy()
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
 
     LaunchedEffect(modelUrl) {
         if (modelUrl != null && cachedModelPath == null && !isPreloading) {
@@ -215,9 +338,7 @@ private fun ArContent(
             childNodes = childNodes,
             planeRenderer = true,
             onViewUpdated = {
-                if (arSceneView == null) {
-                    arSceneView = this
-                }
+                arSceneView = this
             },
             sessionConfiguration = { session, config ->
                 config.planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
@@ -229,136 +350,125 @@ private fun ArContent(
                 config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
             },
             onSessionUpdated = { session, frame ->
-                currentFrame = frame
+                try {
+                    currentFrame = frame
 
-                val planes = session.getAllTrackables(Plane::class.java)
-                    .filter { it.trackingState == TrackingState.TRACKING }
+                    val planes = session.getAllTrackables(Plane::class.java)
+                        .filter { it.trackingState == TrackingState.TRACKING }
 
-                if (planes.isNotEmpty() && !hasPlane) {
-                    hasPlane = true
-                    if (arState == ArState.SCANNING) {
-                        arState = ArState.READY
-                        Log.d(TAG, "Plane detected (${planes.size} planes)")
-                    }
-                }
-
-                if (!hasPlane && arState == ArState.SCANNING) {
-                    val timestamp = frame.timestamp
-                    if (timestamp > 3_000_000_000L) {
+                    if (planes.isNotEmpty() && !hasPlane) {
                         hasPlane = true
-                        arState = ArState.READY
-                        Log.d(TAG, "Auto-enabled placement")
+                        if (arState == ArState.SCANNING) {
+                            arState = ArState.READY
+                            Log.d(TAG, "Plane detected (${planes.size} planes)")
+                        }
                     }
+
+                    if (!hasPlane && arState == ArState.SCANNING) {
+                        val timestamp = frame.timestamp
+                        if (timestamp > 3_000_000_000L) {
+                            hasPlane = true
+                            arState = ArState.READY
+                            Log.d(TAG, "Auto-enabled placement")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Session update error: ${e.message}", e)
                 }
             },
             onGestureListener = rememberOnGestureListener(
                 onSingleTapConfirmed = { motionEvent, node ->
-                    if (arState != ArState.READY) {
-                        Log.d(TAG, "Tap blocked - state: $arState")
-                        return@rememberOnGestureListener
-                    }
+                    if (node != null) return@rememberOnGestureListener
+                    if (placementJob?.isActive == true) return@rememberOnGestureListener
 
-                    if (isPreloading && cachedModelPath == null) {
-                        Log.d(TAG, "Tap blocked - model still downloading")
-                        return@rememberOnGestureListener
-                    }
-
-                    val frame = currentFrame ?: return@rememberOnGestureListener
-
-                    Log.d(TAG, "Tap at ${motionEvent.x}, ${motionEvent.y}")
-
-                    val hitResults = frame.hitTest(motionEvent.x, motionEvent.y)
-
-                    var anchor: com.google.ar.core.Anchor? = null
-                    var anchorSource = "unknown"
-
-                    val planeHit = hitResults.firstOrNull { hit ->
-                        hit.trackable is Plane && hit.trackable.trackingState == TrackingState.TRACKING
-                    }
-
-                    if (planeHit != null) {
-                        anchor = planeHit.createAnchor()
-                        anchorSource = "Plane"
-                    } else {
-                        val depthHit = hitResults.firstOrNull { hit ->
-                            hit.trackable?.trackingState == TrackingState.TRACKING
+                    try {
+                        if (arState != ArState.READY) {
+                            Log.d(TAG, "Tap blocked - state: $arState")
+                            return@rememberOnGestureListener
                         }
-                        if (depthHit != null) {
-                            anchor = depthHit.createAnchor()
-                            anchorSource = depthHit.trackable?.javaClass?.simpleName ?: "DepthPoint"
-                        } else {
-                            val instantHits = frame.hitTestInstantPlacement(motionEvent.x, motionEvent.y, 2.0f)
-                            instantHits.firstOrNull()?.let { hit ->
-                                anchor = hit.createAnchor()
-                                anchorSource = "instant_placement"
+
+                        if (isPreloading && cachedModelPath == null) {
+                            Log.d(TAG, "Tap blocked - model still downloading")
+                            return@rememberOnGestureListener
+                        }
+
+                        val frame = currentFrame ?: return@rememberOnGestureListener
+                        val modelSourceUrl = modelUrl
+
+                        val anchorResult = createPlacementAnchor(frame, motionEvent)
+                        if (anchorResult == null) {
+                            Log.e(TAG, "No anchor created")
+                            return@rememberOnGestureListener
+                        }
+
+                        val placementAnchor = anchorResult.first
+                        val anchorSource = anchorResult.second
+                        arState = ArState.PLACING
+                        errorMessage = null
+
+                        childNodes.forEach { existingNode ->
+                            try {
+                                existingNode.anchor.detach()
+                                existingNode.destroy()
+                            } catch (_: Exception) {
                             }
                         }
-                    }
+                        childNodes = emptyList()
 
-                    if (anchor == null) {
-                        Log.e(TAG, "No anchor created")
-                        return@rememberOnGestureListener
-                    }
-
-                    val placementAnchor = anchor!!
-
-                    Log.d(TAG, "Anchor: $anchorSource")
-                    arState = ArState.PLACING
-
-                    childNodes.forEach { node ->
-                        try { node.anchor.detach(); node.destroy() } catch (_: Exception) {}
-                    }
-                    childNodes = emptyList()
-
-                    scope.launch {
-                        try {
-                            val modelPath = cachedModelPath ?: run {
-                                loadingProgress = "Loading model..."
-                                getOrDownloadModel(context, modelUrl) { loadingProgress = it }
-                            }
-
-                            loadingProgress = "Rendering..."
-
-                            var modelInstance = modelLoader.loadModelInstance(modelPath)
-
-                            if (modelInstance == null) {
-                                Log.w(TAG, "First load attempt failed, retrying...")
-                                kotlinx.coroutines.delay(100)
-                                modelInstance = modelLoader.loadModelInstance(modelPath)
-                            }
-
-                            if (modelInstance != null) {
-                                val modelNode = ModelNode(
-                                    modelInstance = modelInstance,
-                                    scaleToUnits = MODEL_SCALE
-                                ).apply {
-                                    isEditable = true
+                        placementJob?.cancel()
+                        placementJob = scope.launch {
+                            try {
+                                val modelPath = cachedModelPath ?: run {
+                                    loadingProgress = context.getString(R.string.ar_loading_model)
+                                    getOrDownloadModel(context, modelSourceUrl) { loadingProgress = it }
                                 }
 
-                                val anchorNode = AnchorNode(
-                                    engine = engine,
-                                    anchor = placementAnchor
-                                ).apply {
-                                    addChildNode(modelNode)
+                                loadingProgress = context.getString(R.string.ar_loading_model)
+
+                                var modelInstance = modelLoader.loadModelInstance(modelPath)
+
+                                if (modelInstance == null) {
+                                    Log.w(TAG, "First load attempt failed, retrying...")
+                                    kotlinx.coroutines.delay(120)
+                                    modelInstance = modelLoader.loadModelInstance(modelPath)
                                 }
 
-                                childNodes = listOf(anchorNode)
-                                arState = ArState.PLACED
-                                loadingProgress = ""
-                                Log.d(TAG, "Model placed from $anchorSource")
-                            } else {
-                                cachedModelPath?.let { path ->
-                                    File(path.removePrefix("file://")).delete()
-                                    cachedModelPath = null
+                                if (modelInstance != null) {
+                                    val modelNode = ModelNode(
+                                        modelInstance = modelInstance,
+                                        scaleToUnits = MODEL_SCALE
+                                    ).apply {
+                                        isEditable = true
+                                    }
+
+                                    val anchorNode = AnchorNode(
+                                        engine = engine,
+                                        anchor = placementAnchor
+                                    ).apply {
+                                        addChildNode(modelNode)
+                                    }
+
+                                    childNodes = listOf(anchorNode)
+                                    arState = ArState.PLACED
+                                    loadingProgress = ""
+                                    Log.d(TAG, "Model placed from $anchorSource")
+                                } else {
+                                    throw Exception("Model failed to load. Tap to retry.")
                                 }
-                                throw Exception("Model failed to load. Tap to retry.")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Placement error: ${e.message}", e)
+                                errorMessage = e.message
+                                arState = ArState.ERROR
+                                try {
+                                    placementAnchor.detach()
+                                } catch (_: Exception) {
+                                }
                             }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error: ${e.message}")
-                            errorMessage = e.message
-                            arState = ArState.ERROR
-                            try { placementAnchor.detach() } catch (_: Exception) {}
                         }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Tap handling error: ${e.message}", e)
+                        errorMessage = e.message ?: context.getString(R.string.error_unknown)
+                        arState = ArState.ERROR
                     }
                 }
             )
@@ -375,6 +485,7 @@ private fun ArContent(
             showCaptureSuccess = showCaptureSuccess,
             onNavigateBack = onNavigateBack,
             onClear = {
+                placementJob?.cancel()
                 childNodes.forEach { node ->
                     try { node.anchor.detach(); node.destroy() } catch (_: Exception) {}
                 }
@@ -835,90 +946,59 @@ private suspend fun getOrDownloadModel(
     url: String,
     onProgress: (String) -> Unit
 ): String = withContext(Dispatchers.IO) {
-    val cacheDir = File(context.cacheDir, "ar_models")
-    if (!cacheDir.exists()) cacheDir.mkdirs()
-
-    val fileName = url.md5() + ".glb"
-    val cachedFile = File(cacheDir, fileName)
-
-    if (cachedFile.exists() && isValidGlbFile(cachedFile)) {
-        Log.d(TAG, "Loading from cache: ${cachedFile.absolutePath} (${cachedFile.length()} bytes)")
+    if (ModelCache.isModelCached(context, url)) {
         onProgress(context.getString(R.string.ar_loading_from_cache))
-        return@withContext "file://${cachedFile.absolutePath}"
-    } else if (cachedFile.exists()) {
-        Log.w(TAG, "Cached file is invalid, deleting: ${cachedFile.absolutePath}")
-        cachedFile.delete()
+        ModelCache.getCachedFilePath(context, url)?.let { cachedPath ->
+            return@withContext "file://$cachedPath"
+        }
     }
 
-    Log.d(TAG, "Downloading model: $url")
     onProgress(context.getString(R.string.ar_downloading))
-
-    try {
-        val connection = URL(url).openConnection()
-        connection.connectTimeout = 30000
-        connection.readTimeout = 120000
-
-        val totalSize = connection.contentLength
-        var downloaded = 0L
-
-        connection.getInputStream().use { input ->
-            cachedFile.outputStream().use { output ->
-                val buffer = ByteArray(8192)
-                var bytesRead: Int
-                while (input.read(buffer).also { bytesRead = it } != -1) {
-                    output.write(buffer, 0, bytesRead)
-                    downloaded += bytesRead
-                    if (totalSize > 0) {
-                        val percent = (downloaded * 100 / totalSize).toInt()
-                        onProgress("${context.getString(R.string.ar_downloading)} $percent%")
-                    }
-                }
-            }
-        }
-
-        if (!isValidGlbFile(cachedFile)) {
-            cachedFile.delete()
-            throw Exception("Downloaded file is not a valid GLB model")
-        }
-
-        Log.d(TAG, "Download complete: ${cachedFile.length()} bytes")
+    val downloadedPath = ModelCache.getCachedModelPath(context, url)
+    if (downloadedPath != null) {
         onProgress(context.getString(R.string.ar_download_complete))
-
-        "file://${cachedFile.absolutePath}"
-    } catch (e: Exception) {
-        cachedFile.delete()
-        throw e
+        return@withContext "file://$downloadedPath"
     }
+
+    throw Exception("Failed to download model")
 }
 
-private fun isValidGlbFile(file: File): Boolean {
-    if (!file.exists() || file.length() < 12) return false
+private fun createPlacementAnchor(
+    frame: Frame,
+    motionEvent: android.view.MotionEvent
+): Pair<com.google.ar.core.Anchor, String>? {
+    val hitResults = frame.hitTest(motionEvent.x, motionEvent.y)
 
+    val planeHit = hitResults.firstOrNull { hit ->
+        hit.trackable is Plane && hit.trackable.trackingState == TrackingState.TRACKING
+    }
+    if (planeHit != null) {
+        return createAnchorSafely(planeHit)?.let { it to "Plane" }
+    }
+
+    val trackedHit = hitResults.firstOrNull { hit ->
+        hit.trackable?.trackingState == TrackingState.TRACKING
+    }
+    if (trackedHit != null) {
+        val source = trackedHit.trackable?.javaClass?.simpleName ?: "Trackable"
+        return createAnchorSafely(trackedHit)?.let { it to source }
+    }
+
+    val instantHit = frame.hitTestInstantPlacement(motionEvent.x, motionEvent.y, 2.0f).firstOrNull()
+    if (instantHit != null) {
+        return createAnchorSafely(instantHit)?.let { it to "instant_placement" }
+    }
+
+    return null
+}
+
+private fun createAnchorSafely(hitResult: HitResult): com.google.ar.core.Anchor? {
     return try {
-        file.inputStream().use { input ->
-            val header = ByteArray(4)
-            if (input.read(header) != 4) return@use false
-
-            val magic = (header[0].toInt() and 0xFF) or
-                       ((header[1].toInt() and 0xFF) shl 8) or
-                       ((header[2].toInt() and 0xFF) shl 16) or
-                       ((header[3].toInt() and 0xFF) shl 24)
-
-            val isValid = magic == 0x46546C67
-            if (!isValid) {
-                Log.w(TAG, "Invalid GLB magic: ${header.contentToString()}, expected glTF")
-            }
-            isValid
-        }
+        hitResult.createAnchor()
     } catch (e: Exception) {
-        Log.e(TAG, "Error validating GLB file: ${e.message}")
-        false
+        Log.e(TAG, "Anchor creation failed: ${e.message}", e)
+        null
     }
-}
-
-private fun String.md5(): String {
-    val md = MessageDigest.getInstance("MD5")
-    return md.digest(toByteArray()).joinToString("") { "%02x".format(it) }
 }
 
 @Composable
@@ -930,6 +1010,13 @@ private fun rememberOnGestureListener(
 
 private suspend fun captureArScreenshot(context: Context, arSceneView: ARSceneView) = withContext(Dispatchers.Main) {
     try {
+        if (!arSceneView.isAttachedToWindow) {
+            throw Exception("AR view is not attached")
+        }
+        if (arSceneView.width <= 0 || arSceneView.height <= 0) {
+            throw Exception("AR view is not laid out yet")
+        }
+
         val bitmap = Bitmap.createBitmap(
             arSceneView.width,
             arSceneView.height,
@@ -995,3 +1082,69 @@ private fun saveBitmapToGallery(context: Context, bitmap: Bitmap) {
         Log.d(TAG, "Image saved to gallery: $uri")
     } ?: throw Exception("Failed to create media entry")
 }
+
+private suspend fun checkArRuntimeState(context: Context): ArRuntimeState = withContext(Dispatchers.Main) {
+    try {
+        if (isKnownUnstableArCoreDevice()) {
+            val fingerprint = Build.FINGERPRINT
+            Log.e(TAG, "Blocking AR on known unstable device fingerprint: $fingerprint")
+            return@withContext ArRuntimeState.Unsupported(
+                message = "AR is temporarily unavailable on this device build. Please wait for an ARCore/device update.",
+                canRetry = false
+            )
+        }
+
+        when (ArCoreApk.getInstance().checkAvailability(context)) {
+            ArCoreApk.Availability.SUPPORTED_INSTALLED -> Unit
+
+            ArCoreApk.Availability.UNSUPPORTED_DEVICE_NOT_CAPABLE -> {
+                return@withContext ArRuntimeState.Unsupported("This device is not compatible with ARCore")
+            }
+
+            ArCoreApk.Availability.SUPPORTED_APK_TOO_OLD,
+            ArCoreApk.Availability.SUPPORTED_NOT_INSTALLED -> {
+                return@withContext ArRuntimeState.Unsupported("Google Play Services for AR is missing or outdated")
+            }
+
+            ArCoreApk.Availability.UNKNOWN_CHECKING,
+            ArCoreApk.Availability.UNKNOWN_TIMED_OUT -> {
+                return@withContext ArRuntimeState.Unsupported("AR support check timed out, please retry")
+            }
+
+            else -> {
+                return@withContext ArRuntimeState.Unsupported("AR is currently unavailable on this device")
+            }
+        }
+
+        ArRuntimeState.Ready
+    } catch (_: UnavailableDeviceNotCompatibleException) {
+        ArRuntimeState.Unsupported("This device is not compatible with ARCore")
+    } catch (_: UnavailableArcoreNotInstalledException) {
+        ArRuntimeState.Unsupported("Google Play Services for AR is not installed")
+    } catch (_: UnavailableApkTooOldException) {
+        ArRuntimeState.Unsupported("Google Play Services for AR needs to be updated")
+    } catch (_: UnavailableSdkTooOldException) {
+        ArRuntimeState.Unsupported("App AR SDK is outdated for this device")
+    } catch (_: UnavailableException) {
+        ArRuntimeState.Unsupported("AR is currently unavailable on this device")
+    } catch (_: SecurityException) {
+        ArRuntimeState.Unsupported("Camera permission is required for AR")
+    } catch (e: Exception) {
+        Log.e(TAG, "AR runtime probe unexpected error: ${e.message}", e)
+        ArRuntimeState.Unsupported("Failed to initialize AR runtime")
+    }
+}
+
+private fun isKnownUnstableArCoreDevice(): Boolean {
+    val fingerprint = Build.FINGERPRINT.lowercase()
+    val model = Build.MODEL.lowercase()
+    val manufacturer = Build.MANUFACTURER.lowercase()
+
+    // Guard for Samsung A56 Android 16 builds currently crashing in ARCore sensor init.
+    if (manufacturer == "samsung" && (fingerprint.contains("/a56x:") || model.contains("a56"))) {
+        return true
+    }
+
+    return false
+}
+

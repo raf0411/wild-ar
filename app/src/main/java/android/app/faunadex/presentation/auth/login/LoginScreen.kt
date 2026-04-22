@@ -1,8 +1,5 @@
 package android.app.faunadex.presentation.auth.login
 
-import android.R.attr.enabled
-import android.R.attr.fontFamily
-import android.R.attr.fontWeight
 import android.app.faunadex.R
 import android.app.faunadex.presentation.components.AuthButton
 import android.app.faunadex.presentation.components.CustomTextField
@@ -12,7 +9,6 @@ import android.app.faunadex.ui.theme.AlmostBlack
 import android.app.faunadex.ui.theme.CodeNextFont
 import android.app.faunadex.ui.theme.DarkForest
 import android.app.faunadex.ui.theme.DarkGreenSage
-import android.app.faunadex.ui.theme.DarkNeutral
 import android.app.faunadex.ui.theme.FaunaDexTheme
 import android.app.faunadex.ui.theme.JerseyFont
 import android.app.faunadex.ui.theme.PastelYellow
