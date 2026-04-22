@@ -30,10 +30,12 @@ import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Rotate90DegreesCw
 import androidx.compose.material.icons.filled.ZoomOutMap
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -185,33 +187,109 @@ private fun ArRuntimeErrorContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0D1B2A),
+                        Color(0xFF1B263B),
+                        Color(0xFF0D1B2A)
+                    )
+                )
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        Card(
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.Black.copy(alpha = 0.75f)
+            )
         ) {
-            Text(
-                text = stringResource(R.string.error),
-                color = White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = message,
-                color = White.copy(alpha = 0.85f),
-                textAlign = TextAlign.Center
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Warning,
+                    contentDescription = null,
+                    tint = PastelYellow,
+                    modifier = Modifier.size(48.dp)
+                )
+
+                Text(
+                    text = stringResource(R.string.ar_error),
+                    color = White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = JerseyFont,
+                    textAlign = TextAlign.Center
+                )
+
+                Text(
+                    text = message,
+                    color = White.copy(alpha = 0.9f),
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 if (canRetry) {
-                    Button(onClick = onRetry) {
-                        Text(text = stringResource(R.string.retry))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = onRetry,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PrimaryGreen,
+                                contentColor = White
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(R.string.retry),
+                                fontFamily = JerseyFont,
+                                fontSize = 18.sp
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = onNavigateBack,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryGreenLime),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryGreenLime)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.ar_go_back),
+                                fontFamily = JerseyFont,
+                                fontSize = 18.sp
+                            )
+                        }
                     }
-                }
-                OutlinedButton(onClick = onNavigateBack) {
-                    Text(text = stringResource(R.string.ar_go_back))
+                } else {
+                    Button(
+                        onClick = onNavigateBack,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryGreen,
+                            contentColor = White
+                        )
+                    ) {
+                        Text(
+                            text = stringResource(R.string.ar_go_back),
+                            fontFamily = JerseyFont,
+                            fontSize = 18.sp
+                        )
+                    }
                 }
             }
         }

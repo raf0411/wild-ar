@@ -106,7 +106,7 @@ dependencies {
     implementation(libs.maps.compose)
 
     // ARCore for AR functionality
-    implementation(libs.core.v1440)
+    implementation(libs.arcore)
 
     // SceneView for AR rendering
     implementation(libs.arsceneview.v0100)
