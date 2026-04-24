@@ -2,6 +2,7 @@ package android.app.faunadex.presentation.animalDetail
 
 import android.app.faunadex.domain.model.Animal
 import android.app.faunadex.domain.model.EducationLevel
+import android.content.pm.PackageManager
 import android.app.faunadex.presentation.components.FaunaTopBarWithBack
 import android.app.faunadex.presentation.components.LoadingSpinner
 import android.app.faunadex.ui.theme.BlueOcean
@@ -38,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -86,7 +88,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material.icons.automirrored.outlined.HelpCenter
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -290,7 +291,6 @@ fun AnimalDetailScreen(
                     onStopAudioClick = { viewModel.stopAudio() },
                     onSeekTo = { position -> viewModel.seekTo(position) },
                     onNavigateToAr = { animalId ->
-                        // Check AR availability before navigation
                         when (arAvailability) {
                             is ArAvailabilityState.Available -> {
                                 Log.d("AnimalDetailScreen", "ARCore available, navigating to AR")
@@ -305,13 +305,13 @@ fun AnimalDetailScreen(
                                 showArUnsupportedDialog = true
                             }
                             is ArAvailabilityState.Error -> {
-                                Log.d("AnimalDetailScreen", "ARCore check error: ${(arAvailability as ArAvailabilityState.Error).message}")
-                                arErrorMessage = (arAvailability as ArAvailabilityState.Error).message
-                                showArErrorDialog = true
+                                val message = (arAvailability as ArAvailabilityState.Error).message
+                                Log.d("AnimalDetailScreen", "ARCore pre-check error: $message; proceeding to AR screen for runtime check")
+                                onNavigateToAr(animalId)
                             }
                             is ArAvailabilityState.Checking -> {
-                                Log.d("AnimalDetailScreen", "Still checking ARCore availability")
-                                // Could show a loading indicator here
+                                Log.d("AnimalDetailScreen", "ARCore availability still checking; proceeding to AR screen")
+                                onNavigateToAr(animalId)
                             }
                         }
                     },
@@ -1017,10 +1017,70 @@ fun HabitatMapPlaceholder(
     longitude: Double,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val hasConfiguredMapsKey = remember(context) { hasConfiguredMapsApiKey(context) }
+
+    if (!hasConfiguredMapsKey) {
+        Box(
+            modifier = modifier
+                .height(250.dp)
+                .background(
+                    color = Color(0xFF2C3E2E),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .border(
+                    width = 2.dp,
+                    color = MediumGreenSage.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .padding(horizontal = 20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Place,
+                    contentDescription = "Map Location",
+                    tint = MediumGreenSage,
+                    modifier = Modifier.size(48.dp)
+                )
+                Text(
+                    text = "Maps key is missing",
+                    fontFamily = PoppinsFont,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = PastelYellow,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "Add MAPS_API_KEY in local.properties to load habitat map",
+                    fontFamily = PoppinsFont,
+                    fontSize = 13.sp,
+                    color = MediumGreenSage,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+        return
+    }
+
     if (latitude != 0.0 && longitude != 0.0) {
         val animalLocation = LatLng(latitude, longitude)
         val cameraPositionState = rememberCameraPositionState {
             position = CameraPosition.fromLatLngZoom(animalLocation, 10f)
+        }
+        var mapLoaded by remember(latitude, longitude) { mutableStateOf(false) }
+        var mapLoadTimedOut by remember(latitude, longitude) { mutableStateOf(false) }
+
+        LaunchedEffect(latitude, longitude) {
+            mapLoaded = false
+            mapLoadTimedOut = false
+            kotlinx.coroutines.delay(8000)
+            if (!mapLoaded) {
+                mapLoadTimedOut = true
+            }
         }
 
         Box(
@@ -1036,6 +1096,10 @@ fun HabitatMapPlaceholder(
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
+                onMapLoaded = {
+                    mapLoaded = true
+                    mapLoadTimedOut = false
+                },
                 properties = MapProperties(
                     isMyLocationEnabled = false
                 ),
@@ -1053,6 +1117,37 @@ fun HabitatMapPlaceholder(
                     title = stringResource(R.string.animal_habitat),
                     snippet = "Lat: ${String.format(java.util.Locale.US, "%.4f", latitude)}, Long: ${String.format(java.util.Locale.US, "%.4f", longitude)}"
                 )
+            }
+
+            if (mapLoadTimedOut) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Map tiles failed to load",
+                            fontFamily = PoppinsFont,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PastelYellow,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Check internet connection and Maps API key restrictions",
+                            fontFamily = PoppinsFont,
+                            fontSize = 12.sp,
+                            color = White.copy(alpha = 0.85f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
         }
     } else {
@@ -1089,6 +1184,20 @@ fun HabitatMapPlaceholder(
                 )
             }
         }
+    }
+}
+
+private fun hasConfiguredMapsApiKey(context: android.content.Context): Boolean {
+    return try {
+        val appInfo = context.packageManager.getApplicationInfo(
+            context.packageName,
+            PackageManager.GET_META_DATA
+        )
+        val key = appInfo.metaData?.getString("com.google.android.geo.API_KEY")?.trim().orEmpty()
+        key.isNotBlank() && key != "YOUR_MAPS_API_KEY_HERE"
+    } catch (e: Exception) {
+        Log.e("HabitatMap", "Failed to read Maps API key metadata", e)
+        false
     }
 }
 
