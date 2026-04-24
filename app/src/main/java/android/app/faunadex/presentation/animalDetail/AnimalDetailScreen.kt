@@ -291,7 +291,6 @@ fun AnimalDetailScreen(
                     onStopAudioClick = { viewModel.stopAudio() },
                     onSeekTo = { position -> viewModel.seekTo(position) },
                     onNavigateToAr = { animalId ->
-                        // Check AR availability before navigation
                         when (arAvailability) {
                             is ArAvailabilityState.Available -> {
                                 Log.d("AnimalDetailScreen", "ARCore available, navigating to AR")
@@ -306,15 +305,13 @@ fun AnimalDetailScreen(
                                 showArUnsupportedDialog = true
                             }
                             is ArAvailabilityState.Error -> {
-                                Log.d("AnimalDetailScreen", "ARCore check error: ${(arAvailability as ArAvailabilityState.Error).message}")
-                                arErrorMessage = (arAvailability as ArAvailabilityState.Error).message
-                                showArErrorDialog = true
+                                val message = (arAvailability as ArAvailabilityState.Error).message
+                                Log.d("AnimalDetailScreen", "ARCore pre-check error: $message; proceeding to AR screen for runtime check")
+                                onNavigateToAr(animalId)
                             }
                             is ArAvailabilityState.Checking -> {
-                                Log.d("AnimalDetailScreen", "Still checking ARCore availability")
-                                viewModel.refreshArCoreAvailability()
-                                arErrorMessage = "Still checking AR support. Please try again in a moment."
-                                showArErrorDialog = true
+                                Log.d("AnimalDetailScreen", "ARCore availability still checking; proceeding to AR screen")
+                                onNavigateToAr(animalId)
                             }
                         }
                     },
