@@ -312,7 +312,9 @@ fun AnimalDetailScreen(
                             }
                             is ArAvailabilityState.Checking -> {
                                 Log.d("AnimalDetailScreen", "Still checking ARCore availability")
-                                // Could show a loading indicator here
+                                viewModel.refreshArCoreAvailability()
+                                arErrorMessage = "Still checking AR support. Please try again in a moment."
+                                showArErrorDialog = true
                             }
                         }
                     },

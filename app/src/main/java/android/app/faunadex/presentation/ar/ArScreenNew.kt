@@ -1,8 +1,10 @@
 package android.app.faunadex.presentation.ar
 
 import android.Manifest
+import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
+import android.content.ContextWrapper
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Environment
@@ -59,6 +61,7 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException
 import com.google.ar.core.exceptions.UnavailableException
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException
+import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.node.AnchorNode
@@ -1172,21 +1175,55 @@ private suspend fun checkArRuntimeState(context: Context): ArRuntimeState = with
             )
         }
 
-        when (ArCoreApk.getInstance().checkAvailability(context)) {
+        val arCoreApk = ArCoreApk.getInstance()
+        var availability = arCoreApk.checkAvailability(context)
+        var retryCount = 0
+
+        while (availability.isTransient && retryCount < 8) {
+            kotlinx.coroutines.delay(250L)
+            availability = arCoreApk.checkAvailability(context)
+            retryCount++
+        }
+
+        Log.d(
+            TAG,
+            "ARCore availability=$availability, retries=$retryCount, fingerprint=${Build.FINGERPRINT}, model=${Build.MODEL}"
+        )
+
+        when (availability) {
             ArCoreApk.Availability.SUPPORTED_INSTALLED -> Unit
 
             ArCoreApk.Availability.UNSUPPORTED_DEVICE_NOT_CAPABLE -> {
-                return@withContext ArRuntimeState.Unsupported("This device is not compatible with ARCore")
+                val emulatorHint = if (isProbablyEmulator()) {
+                    " If this is an emulator, ARCore usually needs a Google Play x86_64 AVD with Back Camera set to VirtualScene; ARM64 AVDs often report not capable."
+                } else {
+                    ""
+                }
+                return@withContext ArRuntimeState.Unsupported("This device is not compatible with ARCore.$emulatorHint")
             }
 
             ArCoreApk.Availability.SUPPORTED_APK_TOO_OLD,
             ArCoreApk.Availability.SUPPORTED_NOT_INSTALLED -> {
-                return@withContext ArRuntimeState.Unsupported("Google Play Services for AR is missing or outdated")
+                val activity = context.findActivity()
+                if (activity == null) {
+                    return@withContext ArRuntimeState.Unsupported(
+                        "Google Play Services for AR is missing or outdated. Open AR again and retry.",
+                        canRetry = true
+                    )
+                }
+
+                return@withContext when (ArCoreApk.getInstance().requestInstall(activity, true)) {
+                    ArCoreApk.InstallStatus.INSTALLED -> ArRuntimeState.Ready
+                    ArCoreApk.InstallStatus.INSTALL_REQUESTED -> ArRuntimeState.Unsupported(
+                        "Please complete Google Play Services for AR installation, then tap Retry.",
+                        canRetry = true
+                    )
+                }
             }
 
             ArCoreApk.Availability.UNKNOWN_CHECKING,
             ArCoreApk.Availability.UNKNOWN_TIMED_OUT -> {
-                return@withContext ArRuntimeState.Unsupported("AR support check timed out, please retry")
+                return@withContext ArRuntimeState.Unsupported("AR support check is still initializing. Please wait a moment and tap Retry.")
             }
 
             else -> {
@@ -1203,6 +1240,8 @@ private suspend fun checkArRuntimeState(context: Context): ArRuntimeState = with
         ArRuntimeState.Unsupported("Google Play Services for AR needs to be updated")
     } catch (_: UnavailableSdkTooOldException) {
         ArRuntimeState.Unsupported("App AR SDK is outdated for this device")
+    } catch (_: UnavailableUserDeclinedInstallationException) {
+        ArRuntimeState.Unsupported("AR installation was canceled. Please retry and accept the installation prompt.")
     } catch (_: UnavailableException) {
         ArRuntimeState.Unsupported("AR is currently unavailable on this device")
     } catch (_: SecurityException) {
@@ -1224,5 +1263,28 @@ private fun isKnownUnstableArCoreDevice(): Boolean {
     }
 
     return false
+}
+
+private tailrec fun Context.findActivity(): Activity? {
+    return when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
+}
+
+private fun isProbablyEmulator(): Boolean {
+    val fingerprint = Build.FINGERPRINT.lowercase()
+    val model = Build.MODEL.lowercase()
+    val manufacturer = Build.MANUFACTURER.lowercase()
+    val brand = Build.BRAND.lowercase()
+    val product = Build.PRODUCT.lowercase()
+
+    return fingerprint.startsWith("generic") ||
+        fingerprint.contains("emulator") ||
+        model.contains("sdk") ||
+        manufacturer.contains("genymotion") ||
+        brand.startsWith("generic") ||
+        product.contains("sdk")
 }
 

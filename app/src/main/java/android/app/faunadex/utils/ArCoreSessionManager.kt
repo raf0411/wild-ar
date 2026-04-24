@@ -2,8 +2,12 @@ package android.app.faunadex.utils
 
 import android.app.Activity
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import com.google.ar.core.ArCoreApk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 /**
  * Helper class to check ARCore availability and request installation.
@@ -14,9 +18,22 @@ class ArCoreSessionManager(private val context: Context) {
 
     private var installRequested = false
 
-    fun checkArCoreAvailability(): ArCoreStatus {
-        return try {
-            when (ArCoreApk.getInstance().checkAvailability(context)) {
+    suspend fun checkArCoreAvailability(): ArCoreStatus = withContext(Dispatchers.Main) {
+        try {
+            val arCoreApk = ArCoreApk.getInstance()
+            var availability = arCoreApk.checkAvailability(context)
+            var retries = 0
+
+            // Emulator checks are often transient right after boot; poll briefly before failing.
+            while (availability.isTransient && retries < 8) {
+                delay(250L)
+                availability = arCoreApk.checkAvailability(context)
+                retries++
+            }
+
+            Log.d(TAG, "Availability=$availability retries=$retries model=${Build.MODEL} fp=${Build.FINGERPRINT}")
+
+            when (availability) {
                 ArCoreApk.Availability.SUPPORTED_INSTALLED -> ArCoreStatus.SUPPORTED
                 ArCoreApk.Availability.SUPPORTED_APK_TOO_OLD,
                 ArCoreApk.Availability.SUPPORTED_NOT_INSTALLED -> ArCoreStatus.NOT_INSTALLED

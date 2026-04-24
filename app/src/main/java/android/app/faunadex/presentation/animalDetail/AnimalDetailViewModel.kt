@@ -1,6 +1,7 @@
 package android.app.faunadex.presentation.animalDetail
 
 import android.app.Application
+import android.os.Build
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -67,12 +68,20 @@ class AnimalDetailViewModel @Inject constructor(
     private fun checkArCoreAvailability() {
         viewModelScope.launch {
             try {
+                _arAvailability.value = ArAvailabilityState.Checking
                 val status = arCoreSessionManager.checkArCoreAvailability()
                 _arAvailability.value = when (status) {
                     ArCoreStatus.SUPPORTED -> ArAvailabilityState.Available
                     ArCoreStatus.NOT_INSTALLED -> ArAvailabilityState.NotInstalled
-                    ArCoreStatus.UNSUPPORTED -> ArAvailabilityState.Unsupported
-                    ArCoreStatus.UNKNOWN, ArCoreStatus.ERROR -> ArAvailabilityState.Error("Unable to check AR support")
+                    ArCoreStatus.UNSUPPORTED -> {
+                        if (isProbablyEmulator()) {
+                            ArAvailabilityState.Error("This emulator is not ARCore-capable. Use a Google Play x86_64 AVD and set Back Camera to VirtualScene.")
+                        } else {
+                            ArAvailabilityState.Unsupported
+                        }
+                    }
+                    ArCoreStatus.UNKNOWN -> ArAvailabilityState.Error("AR support check timed out. Wait a moment, then tap AR again.")
+                    ArCoreStatus.ERROR -> ArAvailabilityState.Error("Error checking AR support. Please try again.")
                 }
                 Log.d("AnimalDetailViewModel", "ARCore availability: ${_arAvailability.value}")
             } catch (e: Exception) {
@@ -80,6 +89,10 @@ class AnimalDetailViewModel @Inject constructor(
                 _arAvailability.value = ArAvailabilityState.Error("Error checking AR support: ${e.message}")
             }
         }
+    }
+
+    fun refreshArCoreAvailability() {
+        checkArCoreAvailability()
     }
 
     fun checkArBeforeNavigation(): ArAvailabilityState {
@@ -139,6 +152,21 @@ class AnimalDetailViewModel @Inject constructor(
         super.onCleared()
         audioPlayerManager.stop()
     }
+}
+
+private fun isProbablyEmulator(): Boolean {
+    val fingerprint = Build.FINGERPRINT.lowercase()
+    val model = Build.MODEL.lowercase()
+    val manufacturer = Build.MANUFACTURER.lowercase()
+    val brand = Build.BRAND.lowercase()
+    val product = Build.PRODUCT.lowercase()
+
+    return fingerprint.startsWith("generic") ||
+        fingerprint.contains("emulator") ||
+        model.contains("sdk") ||
+        manufacturer.contains("genymotion") ||
+        brand.startsWith("generic") ||
+        product.contains("sdk")
 }
 
 sealed class ArAvailabilityState {
